@@ -268,7 +268,7 @@ int main(int argc, char* argv[])
                 glm::radians(45.0f),
                 static_cast<float>(g_window_size[0]) / g_window_size[1],
                 0.1f,
-                100.0f
+                1000.0f
             );
             basic_s.update_uniform_mat4f("view", view);
             basic_s.update_uniform_mat4f("proj", proj);
