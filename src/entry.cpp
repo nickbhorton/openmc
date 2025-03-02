@@ -174,6 +174,9 @@ int main(int argc, char* argv[])
     glfwSetCursorPosCallback(window, glfw_mouse_callback);
 
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+    glFrontFace(GL_CW);
+    glCullFace(GL_BACK);
 
     glViewport(0, 0, g_window_size[0], g_window_size[1]);
 
@@ -217,6 +220,9 @@ int main(int argc, char* argv[])
         vao.attach_buffer_object("v_position", positions_b);
         vao.attach_buffer_object("v_uv", uvs_b);
 
+        // imgui vars
+        bool imgui_wireframe{false};
+
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
             if (mouse_capture) {
@@ -248,6 +254,11 @@ int main(int argc, char* argv[])
             glClearBufferfv(GL_COLOR, 0, glm::value_ptr(bg_color));
 
             // draw
+            if (imgui_wireframe) {
+                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            } else {
+                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            }
             vao.bind();
             glDrawArrays(GL_TRIANGLES, 0, positions.size());
 
@@ -265,6 +276,7 @@ int main(int argc, char* argv[])
                 "Camera Position",
                 glm::value_ptr(g_camera_position)
             );
+            ImGui::Checkbox("Wireframe", &imgui_wireframe);
             ImGui::Text("%.2f FPS", io.Framerate);
             ImGui::End();
 
