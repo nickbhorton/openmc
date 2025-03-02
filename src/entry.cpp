@@ -39,6 +39,8 @@ vec3 camera_direction = vec3(
     sin(glm::radians(g_pitch)),
     sin(glm::radians(g_yaw)) * cos(glm::radians(g_pitch))
 );
+bool mouse_capture{};
+bool first_mouse_update{true};
 
 static void glfw_error_callback(int error, const char* desc)
 {
@@ -56,6 +58,16 @@ static void glfw_key_callback(
 {
     if (key == GLFW_KEY_Q && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
+    }
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        if (!mouse_capture) {
+            mouse_capture = true;
+            first_mouse_update = true;
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        } else {
+            mouse_capture = false;
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
     }
 }
 
@@ -96,30 +108,30 @@ GLFWwindow* create_glfw_window(vec2 window_size)
 
 void glfw_mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
-    static bool first_mouse_update = true;
     if (first_mouse_update) {
         g_last[0] = xpos;
         g_last[1] = ypos;
         first_mouse_update = false;
     }
 
-    float xoffset = xpos - g_last[0];
-    float yoffset =
-        g_last[1] -
-        ypos; // reversed since y-coordinates range from bottom to top
-    g_last[0] = xpos;
-    g_last[1] = ypos;
+    if (mouse_capture) {
+        float xoffset = xpos - g_last[0];
+        // reversed since y-coordinates range from bottom to top
+        float yoffset = g_last[1] - ypos;
+        g_last[0] = xpos;
+        g_last[1] = ypos;
 
-    const float sensitivity = 0.1f;
-    xoffset *= sensitivity;
-    yoffset *= sensitivity;
-    g_yaw += xoffset;
-    g_pitch += yoffset;
-    if (g_pitch > 89.0f) {
-        g_pitch = 89.0f;
-    }
-    if (g_pitch < -89.0f) {
-        g_pitch = -89.0f;
+        const float sensitivity = 0.1f;
+        xoffset *= sensitivity;
+        yoffset *= sensitivity;
+        g_yaw += xoffset;
+        g_pitch += yoffset;
+        if (g_pitch > 89.0f) {
+            g_pitch = 89.0f;
+        }
+        if (g_pitch < -89.0f) {
+            g_pitch = -89.0f;
+        }
     }
 }
 
@@ -161,11 +173,12 @@ int main(int argc, char* argv[])
     glfwSetFramebufferSizeCallback(window, glfw_window_resize_callback);
     glfwSetCursorPosCallback(window, glfw_mouse_callback);
 
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
     glEnable(GL_DEPTH_TEST);
 
     glViewport(0, 0, g_window_size[0], g_window_size[1]);
+
+    mouse_capture = true;
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     // setup ImGui context
     IMGUI_CHECKVERSION();
@@ -206,7 +219,9 @@ int main(int argc, char* argv[])
 
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
-            frame_input(window);
+            if (mouse_capture) {
+                frame_input(window);
+            }
 
             camera_direction.x =
                 cos(glm::radians(g_yaw)) * cos(glm::radians(g_pitch));
