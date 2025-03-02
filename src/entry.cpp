@@ -176,7 +176,6 @@ int main(int argc, char* argv[])
     ImGuiWindowFlags window_flags_imgui{};
     window_flags_imgui |= ImGuiWindowFlags_NoMove;
     window_flags_imgui |= ImGuiWindowFlags_NoResize;
-    window_flags_imgui |= ImGuiWindowFlags_NoTitleBar;
     window_flags_imgui |= ImGuiWindowFlags_NoCollapse;
     bool open_imgui{true};
 
@@ -247,7 +246,7 @@ int main(int argc, char* argv[])
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
 
-            ImGui::Begin("Assignment7", &open_imgui, window_flags_imgui);
+            ImGui::Begin("openmc", &open_imgui, window_flags_imgui);
             ImGui::SetWindowPos(ImVec2(0, 0));
             ImGui::SetWindowSize(ImVec2(400, 200));
             ImGui::DragFloat("Yaw", &g_yaw, g_yaw);
