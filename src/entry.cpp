@@ -161,6 +161,8 @@ int main(int argc, char* argv[])
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
+    glEnable(GL_DEPTH_TEST);
+
     glViewport(0, 0, g_window_size[0], g_window_size[1]);
 
     // setup ImGui context
@@ -180,7 +182,6 @@ int main(int argc, char* argv[])
     bool open_imgui{true};
 
     {
-
         ShaderProgram basic_s(
             {{"../res/shaders/basic.vert.glsl", GL_VERTEX_SHADER},
              {"../res/shaders/basic.frag.glsl", GL_FRAGMENT_SHADER}}
@@ -191,19 +192,47 @@ int main(int argc, char* argv[])
             0
         };
 
-        std::vector<std::array<float, 3>> positions{
-            {{-1, -1, 0},
-             {-1, 1, 0},
-             {1, 1, 0},
-             {1, 1, 0},
-             {1, -1, 0},
-             {-1, -1, 0}}
+        size_t constexpr vertex_count{36};
+
+        std::array<std::array<float, 3>, 8> constexpr positions_gen{
+            {{-1, -1, -1},
+             {1, -1, -1},
+             {1, 1, -1},
+             {-1, 1, -1},
+             {-1, -1, 1},
+             {1, -1, 1},
+             {1, 1, 1},
+             {-1, 1, 1}}
         };
-        std::vector<std::array<float, 3>> uvs{
-            {{0, 0, 0}, {0, 1, 0}, {1, 1, 0}, {1, 1, 0}, {1, 0, 0}, {0, 0, 0}}
+        std::array<std::array<float, 2>, 4> constexpr uvs_gen{
+            {{0, 0}, {1, 0}, {1, 1}, {0, 1}}
         };
+
+        std::array<std::array<float, 3>, 6> constexpr normals_gen{
+            {{0, 0, 1}, {1, 0, 0}, {0, 0, -1}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}
+            }
+        };
+
+        std::array<size_t, vertex_count> constexpr position_indexes = {
+            0, 1, 3, 3, 1, 2, 1, 5, 2, 2, 5, 6, 5, 4, 6, 6, 4, 7,
+            4, 0, 7, 7, 0, 3, 3, 2, 7, 7, 2, 6, 4, 5, 0, 0, 5, 1
+        };
+        std::array<size_t, vertex_count / 6> constexpr uv_indexes =
+            {0, 1, 3, 3, 1, 2};
+
+        std::vector<std::array<float, 3>> positions;
+        std::vector<std::array<float, 2>> uvs;
+        std::vector<std::array<float, 3>> normals;
+
+        for (int i = 0; i < vertex_count; i++) {
+            positions.push_back(positions_gen[position_indexes[i]]);
+            uvs.push_back(uvs_gen[uv_indexes[i % 6]]);
+            normals.push_back(normals_gen[position_indexes[i / 6]]);
+        }
+
         StaticBuffer positions_b(positions, GL_ARRAY_BUFFER);
         StaticBuffer uvs_b(uvs, GL_ARRAY_BUFFER);
+        StaticBuffer normals_b(normals, GL_ARRAY_BUFFER);
 
         VertexArrayObject vao{};
         vao.attach_shader(basic_s);
@@ -235,11 +264,12 @@ int main(int argc, char* argv[])
 
             // clear screen white
             vec4 constexpr bg_color{1, 1, 1, 1};
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glClearBufferfv(GL_COLOR, 0, glm::value_ptr(bg_color));
 
             // draw
             vao.bind();
-            glDrawArrays(GL_TRIANGLES, 0, 6);
+            glDrawArrays(GL_TRIANGLES, 0, vertex_count);
 
             // draw the imgui window
             ImGui_ImplOpenGL3_NewFrame();
