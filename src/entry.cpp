@@ -1,0 +1,270 @@
+#include "texture.h"
+#include "vao.h"
+#include <glad/gl.h>
+
+#include <GLFW/glfw3.h>
+
+// glm includes
+#include <glm/geometric.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
+
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
+
+#include <array>
+#include <cstdio>
+#include <iostream>
+
+typedef glm::vec4 vec4;
+typedef glm::vec3 vec3;
+typedef glm::vec2 vec2;
+
+typedef glm::ivec2 ivec2;
+
+typedef glm::mat4 mat4;
+
+ivec2 g_window_size(200, 200);
+ivec2 g_last{g_window_size[0] / 2, g_window_size[1] / 2};
+float g_yaw{-90.0};
+float g_pitch{0.0};
+vec3 g_camera_position = vec3(0.0, 0.0, 3.0);
+vec3 camera_up = vec3(0.0, 1.0, 0.0);
+vec3 camera_direction = vec3(
+    cos(glm::radians(g_yaw)) * cos(glm::radians(g_pitch)),
+    sin(glm::radians(g_pitch)),
+    sin(glm::radians(g_yaw)) * cos(glm::radians(g_pitch))
+);
+
+static void glfw_error_callback(int error, const char* desc)
+{
+    std::cerr << "glfw_error_callback " << error << " " << desc << std::endl;
+    std::exit(1);
+}
+
+static void glfw_key_callback(
+    GLFWwindow* window,
+    int key,
+    int scancode,
+    int action,
+    int mods
+)
+{
+    if (key == GLFW_KEY_Q && action == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, GLFW_TRUE);
+    }
+}
+
+void glfw_window_resize_callback(GLFWwindow* window, int width, int height)
+{
+    // std::cout << "window resized to " << width << "x" << height << std::endl;
+    g_window_size.x = width;
+    g_window_size.y = height;
+    glViewport(0, 0, width, height);
+}
+
+GLFWwindow* create_glfw_window(vec2 window_size)
+{
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+    GLFWwindow* window = glfwCreateWindow(
+        window_size[0],
+        window_size[1],
+        "ngi window",
+        NULL,
+        NULL
+    );
+    if (!window) {
+        glfw_error_callback(-1, "window was null");
+    }
+
+    glfwMakeContextCurrent(window);
+
+    int glad_version = gladLoadGL(glfwGetProcAddress);
+    if (glad_version == 0) {
+        glfw_error_callback(-1, "glad verison what 0");
+    }
+
+    return window;
+}
+
+void glfw_mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    static bool first_mouse_update = true;
+    if (first_mouse_update) {
+        g_last[0] = xpos;
+        g_last[1] = ypos;
+        first_mouse_update = false;
+    }
+
+    float xoffset = xpos - g_last[0];
+    float yoffset =
+        g_last[1] -
+        ypos; // reversed since y-coordinates range from bottom to top
+    g_last[0] = xpos;
+    g_last[1] = ypos;
+
+    const float sensitivity = 0.1f;
+    xoffset *= sensitivity;
+    yoffset *= sensitivity;
+    g_yaw += xoffset;
+    g_pitch += yoffset;
+    if (g_pitch > 89.0f) {
+        g_pitch = 89.0f;
+    }
+    if (g_pitch < -89.0f) {
+        g_pitch = -89.0f;
+    }
+}
+
+void frame_input(GLFWwindow* window)
+{
+    const float camera_speed = 0.25f;
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        g_camera_position += camera_speed * glm::normalize(camera_direction);
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        g_camera_position -= camera_speed * glm::normalize(camera_direction);
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        g_camera_position -=
+            glm::normalize(glm::cross(camera_direction, camera_up)) *
+            camera_speed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        g_camera_position +=
+            glm::normalize(glm::cross(camera_direction, camera_up)) *
+            camera_speed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+        g_camera_position += camera_up * camera_speed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+        g_camera_position -= camera_up * camera_speed;
+    }
+}
+
+int main(int argc, char* argv[])
+{
+    glfwInit();
+    glfwSetErrorCallback(glfw_error_callback);
+
+    GLFWwindow* window = create_glfw_window(g_window_size);
+    glfwSetKeyCallback(window, glfw_key_callback);
+    glfwSetFramebufferSizeCallback(window, glfw_window_resize_callback);
+    glfwSetCursorPosCallback(window, glfw_mouse_callback);
+
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+    glViewport(0, 0, g_window_size[0], g_window_size[1]);
+
+    // setup ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.IniFilename = NULL;
+
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init();
+
+    ImGuiWindowFlags window_flags_imgui{};
+    window_flags_imgui |= ImGuiWindowFlags_NoMove;
+    window_flags_imgui |= ImGuiWindowFlags_NoResize;
+    window_flags_imgui |= ImGuiWindowFlags_NoTitleBar;
+    window_flags_imgui |= ImGuiWindowFlags_NoCollapse;
+    bool open_imgui{true};
+
+    {
+
+        ShaderProgram basic_s(
+            {{"../res/shaders/basic.vert.glsl", GL_VERTEX_SHADER},
+             {"../res/shaders/basic.frag.glsl", GL_FRAGMENT_SHADER}}
+        );
+
+        Texture texture{
+            "/home/nick-dev/res/minecraft/textures/block/stone.png",
+            0
+        };
+
+        std::vector<std::array<float, 3>> positions{
+            {{-1, -1, 0},
+             {-1, 1, 0},
+             {1, 1, 0},
+             {1, 1, 0},
+             {1, -1, 0},
+             {-1, -1, 0}}
+        };
+        std::vector<std::array<float, 3>> uvs{
+            {{0, 0, 0}, {0, 1, 0}, {1, 1, 0}, {1, 1, 0}, {1, 0, 0}, {0, 0, 0}}
+        };
+        StaticBuffer positions_b(positions, GL_ARRAY_BUFFER);
+        StaticBuffer uvs_b(uvs, GL_ARRAY_BUFFER);
+
+        VertexArrayObject vao{};
+        vao.attach_shader(basic_s);
+        vao.attach_buffer_object("v_position", positions_b);
+        vao.attach_buffer_object("v_uv", uvs_b);
+
+        while (!glfwWindowShouldClose(window)) {
+            glfwPollEvents();
+            frame_input(window);
+
+            camera_direction.x =
+                cos(glm::radians(g_yaw)) * cos(glm::radians(g_pitch));
+            camera_direction.y = sin(glm::radians(g_pitch));
+            camera_direction.z =
+                sin(glm::radians(g_yaw)) * cos(glm::radians(g_pitch));
+            mat4 view = glm::lookAt(
+                g_camera_position,
+                g_camera_position + glm::normalize(camera_direction),
+                camera_up
+            );
+            mat4 proj = glm::perspective(
+                glm::radians(45.0f),
+                static_cast<float>(g_window_size[0]) / g_window_size[1],
+                0.1f,
+                100.0f
+            );
+            basic_s.update_uniform_mat4f("view", view);
+            basic_s.update_uniform_mat4f("proj", proj);
+
+            // clear screen white
+            vec4 constexpr bg_color{1, 1, 1, 1};
+            glClearBufferfv(GL_COLOR, 0, glm::value_ptr(bg_color));
+
+            // draw
+            vao.bind();
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+
+            // draw the imgui window
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+
+            ImGui::Begin("Assignment7", &open_imgui, window_flags_imgui);
+            ImGui::SetWindowPos(ImVec2(0, 0));
+            ImGui::SetWindowSize(ImVec2(400, 200));
+            ImGui::DragFloat("Yaw", &g_yaw, g_yaw);
+            ImGui::DragFloat("Pitch", &g_pitch, g_pitch);
+            ImGui::InputFloat3(
+                "Camera Position",
+                glm::value_ptr(g_camera_position)
+            );
+            ImGui::Text("%.2f FPS", io.Framerate);
+            ImGui::End();
+
+            ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+            glfwSwapBuffers(window);
+        }
+    }
+    glfwDestroyWindow(window);
+    glfwTerminate();
+}
