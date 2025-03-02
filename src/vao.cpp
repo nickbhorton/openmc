@@ -64,3 +64,28 @@ void VertexArrayObject::attach_buffer_object(
     );
     glEnableVertexAttribArray(attrib_location);
 }
+
+template <>
+void VertexArrayObject::attach_buffer_object(
+    std::string const& attribute_name,
+    StaticBuffer<std::array<float, 2>>& buffer
+)
+{
+    GLint const attrib_location =
+        glGetAttribLocation(shader_name, attribute_name.c_str());
+    if (attrib_location < 0) {
+        std::cout << "vertex attrib '" << attribute_name << "' was not found"
+                  << "\n";
+    }
+    glBindVertexArray(name);
+    buffer.bind();
+    glVertexAttribPointer(
+        attrib_location, // index
+        2,               // number of numbers
+        GL_FLOAT,        // type
+        GL_FALSE,        // normalized
+        0,
+        BUFFER_OFFSET(0) // how far into the buffer is the fisrt num
+    );
+    glEnableVertexAttribArray(attrib_location);
+}
