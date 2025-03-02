@@ -229,6 +229,16 @@ int main(int argc, char* argv[])
             if (mouse_capture) {
                 frame_input(window);
             }
+            if (imgui_wireframe) {
+                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            } else {
+                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            }
+            if (imgui_vsync) {
+                glfwSwapInterval(1);
+            } else {
+                glfwSwapInterval(0);
+            }
 
             camera_direction.x =
                 cos(glm::radians(g_yaw)) * cos(glm::radians(g_pitch));
@@ -253,17 +263,6 @@ int main(int argc, char* argv[])
             vec4 constexpr bg_color{1, 1, 1, 1};
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glClearBufferfv(GL_COLOR, 0, glm::value_ptr(bg_color));
-
-            if (imgui_wireframe) {
-                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            } else {
-                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-            }
-            if (imgui_vsync) {
-                glfwSwapInterval(1);
-            } else {
-                glfwSwapInterval(0);
-            }
 
             // draw
             vao.bind();
