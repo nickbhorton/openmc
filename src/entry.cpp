@@ -211,14 +211,28 @@ int main(int argc, char* argv[])
         };
 
         auto const [positions, uvs, normals] = cube_geometry();
+        std::vector<std::array<float, 3>> offsets{};
+        for (size_t x = 0; x < 16; x++) {
+            for (size_t z = 0; z < 16; z++) {
+                for (size_t y = 0; y < 256; y++) {
+                    offsets.push_back(
+                        {static_cast<float>(x),
+                         static_cast<float>(y),
+                         static_cast<float>(z)}
+                    );
+                }
+            }
+        }
         StaticBuffer positions_b(positions, GL_ARRAY_BUFFER);
         StaticBuffer uvs_b(uvs, GL_ARRAY_BUFFER);
         StaticBuffer normals_b(normals, GL_ARRAY_BUFFER);
+        StaticBuffer offsets_b(offsets, GL_ARRAY_BUFFER);
 
         VertexArrayObject vao{};
         vao.attach_shader(basic_s);
         vao.attach_buffer_object("v_position", positions_b);
         vao.attach_buffer_object("v_uv", uvs_b);
+        vao.attach_buffer_object("v_offset", offsets_b, 1);
 
         // imgui vars
         bool imgui_wireframe{false};
@@ -266,7 +280,12 @@ int main(int argc, char* argv[])
 
             // draw
             vao.bind();
-            glDrawArrays(GL_TRIANGLES, 0, positions.size());
+            glDrawArraysInstanced(
+                GL_TRIANGLES,
+                0,
+                positions.size(),
+                offsets.size()
+            );
 
             // draw the imgui window
             ImGui_ImplOpenGL3_NewFrame();

@@ -36,7 +36,8 @@ public:
     template <typename T>
     void attach_buffer_object(
         std::string const& attribute_name,
-        StaticBuffer<T>& buffer
+        StaticBuffer<T>& buffer,
+        GLuint divisor = 0
     );
 
     void attach_shader(ShaderProgram const& shader);
@@ -49,7 +50,8 @@ public:
 template <typename T>
 void VertexArrayObject::attach_buffer_object(
     std::string const& attribute_name,
-    StaticBuffer<T>& buffer
+    StaticBuffer<T>& buffer,
+    GLuint divisor
 )
 {
     std::cerr << "voa buffer type not supported\n";

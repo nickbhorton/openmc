@@ -43,7 +43,8 @@ VertexArrayObject& VertexArrayObject::operator=(VertexArrayObject&& other
 template <>
 void VertexArrayObject::attach_buffer_object(
     std::string const& attribute_name,
-    StaticBuffer<std::array<float, 3>>& buffer
+    StaticBuffer<std::array<float, 3>>& buffer,
+    GLuint divisor
 )
 {
     GLint const attrib_location =
@@ -63,12 +64,16 @@ void VertexArrayObject::attach_buffer_object(
         BUFFER_OFFSET(0) // how far into the buffer is the fisrt num
     );
     glEnableVertexAttribArray(attrib_location);
+    if (divisor > 0) {
+        glVertexAttribDivisor(attrib_location, divisor);
+    }
 }
 
 template <>
 void VertexArrayObject::attach_buffer_object(
     std::string const& attribute_name,
-    StaticBuffer<std::array<float, 2>>& buffer
+    StaticBuffer<std::array<float, 2>>& buffer,
+    GLuint divisor
 )
 {
     GLint const attrib_location =
@@ -88,4 +93,7 @@ void VertexArrayObject::attach_buffer_object(
         BUFFER_OFFSET(0) // how far into the buffer is the fisrt num
     );
     glEnableVertexAttribArray(attrib_location);
+    if (divisor > 0) {
+        glVertexAttribDivisor(attrib_location, divisor);
+    }
 }
