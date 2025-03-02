@@ -12,6 +12,7 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
+#include "chunk.h"
 #include "geometry.h"
 #include "texture.h"
 #include "vao.h"
@@ -210,23 +211,34 @@ int main(int argc, char* argv[])
             0
         };
 
-        auto const [positions, uvs, normals] = cube_geometry();
+        Chunk test_chunk{};
+        test_chunk.set_block_mask(0, 0, 0);
+        test_chunk.set_block_mask(0, 2, 0);
+        test_chunk.set_block_mask(2, 0, 0);
+        test_chunk.set_block_mask(2, 0, 2);
+        test_chunk.set_block_mask(2, 2, 2);
+
         std::vector<std::array<float, 3>> offsets{};
-        for (size_t x = 0; x < 16; x++) {
-            for (size_t z = 0; z < 16; z++) {
-                for (size_t y = 0; y < 256; y++) {
-                    offsets.push_back(
-                        {static_cast<float>(x),
-                         static_cast<float>(y),
-                         static_cast<float>(z)}
-                    );
+        for (uint32_t x = 0; x < g_chunk_size[0]; x++) {
+            for (uint32_t z = 0; z < g_chunk_size[2]; z++) {
+                for (uint32_t y = 0; y < g_chunk_size[1]; y++) {
+                    if (test_chunk.test_block_mask(x, y, z)) {
+                        offsets.push_back(
+                            {static_cast<float>(x),
+                             static_cast<float>(y),
+                             static_cast<float>(z)}
+                        );
+                    }
                 }
             }
         }
+        StaticBuffer offsets_b(offsets, GL_ARRAY_BUFFER);
+        std::cout << offsets.size() << "\n";
+
+        auto const [positions, uvs, normals] = cube_geometry();
         StaticBuffer positions_b(positions, GL_ARRAY_BUFFER);
         StaticBuffer uvs_b(uvs, GL_ARRAY_BUFFER);
         StaticBuffer normals_b(normals, GL_ARRAY_BUFFER);
-        StaticBuffer offsets_b(offsets, GL_ARRAY_BUFFER);
 
         VertexArrayObject vao{};
         vao.attach_shader(basic_s);

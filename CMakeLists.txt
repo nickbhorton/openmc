@@ -28,5 +28,6 @@ add_executable(openmc src/entry.cpp
     src/vao.cpp src/vao.h
     src/texture.cpp src/texture.h
     src/geometry.cpp src/geometry.h
+    src/chunk.cpp src/chunk.h
 )
 target_link_libraries(openmc PRIVATE glad glfw imgui)
