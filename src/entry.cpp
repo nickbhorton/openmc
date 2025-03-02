@@ -222,6 +222,7 @@ int main(int argc, char* argv[])
 
         // imgui vars
         bool imgui_wireframe{false};
+        bool imgui_vsync{true};
 
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
@@ -253,12 +254,18 @@ int main(int argc, char* argv[])
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glClearBufferfv(GL_COLOR, 0, glm::value_ptr(bg_color));
 
-            // draw
             if (imgui_wireframe) {
                 glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             } else {
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             }
+            if (imgui_vsync) {
+                glfwSwapInterval(1);
+            } else {
+                glfwSwapInterval(0);
+            }
+
+            // draw
             vao.bind();
             glDrawArrays(GL_TRIANGLES, 0, positions.size());
 
@@ -277,6 +284,7 @@ int main(int argc, char* argv[])
                 glm::value_ptr(g_camera_position)
             );
             ImGui::Checkbox("Wireframe", &imgui_wireframe);
+            ImGui::Checkbox("Vsync", &imgui_vsync);
             ImGui::Text("%.2f FPS", io.Framerate);
             ImGui::End();
 
