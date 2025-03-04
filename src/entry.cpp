@@ -206,6 +206,11 @@ int main(int argc, char* argv[])
              {"../res/shaders/basic.frag.glsl", GL_FRAGMENT_SHADER}}
         );
 
+        ShaderProgram axis_s(
+            {{"../res/shaders/axis.vert.glsl", GL_VERTEX_SHADER},
+             {"../res/shaders/axis.frag.glsl", GL_FRAGMENT_SHADER}}
+        );
+
         Texture texture{
             "/home/nick-dev/res/minecraft/textures/block/stone.png",
             0
@@ -235,23 +240,52 @@ int main(int argc, char* argv[])
         StaticBuffer offsets_b(offsets, GL_ARRAY_BUFFER);
         std::cout << offsets.size() << "\n";
 
-        std::vector<std::array<float, 3>> positions{
+        std::vector<std::array<float, 3>> face_positions{
             {{0, 0, 0}, {1, 0, 0}, {0, 0, 1}, {1, 0, 1}}
         };
-        std::vector<std::array<float, 2>> uvs{{{0, 0}, {1, 0}, {0, 1}, {1, 1}}};
+        std::vector<std::array<float, 2>> face_uvs{
+            {{0, 0}, {1, 0}, {0, 1}, {1, 1}}
+        };
 
-        StaticBuffer positions_b(positions, GL_ARRAY_BUFFER);
-        StaticBuffer uvs_b(uvs, GL_ARRAY_BUFFER);
+        std::vector<std::array<float, 3>> axis_positions{{
+            {0, 0, 0},
+            {1, 0, 0},
+            {0, 0, 0},
+            {0, 1, 0},
+            {0, 0, 0},
+            {0, 0, 1},
+        }};
+        std::vector<std::array<float, 3>> axis_colors{{
+            {1, 0, 0},
+            {1, 0, 0},
+            {0, 1, 0},
+            {0, 1, 0},
+            {0, 0, 1},
+            {0, 0, 1},
+        }};
 
-        VertexArrayObject vao{};
-        vao.attach_shader(basic_s);
-        vao.attach_buffer_object("v_position", positions_b);
-        vao.attach_buffer_object("v_uv", uvs_b);
-        vao.attach_buffer_object("v_offset", offsets_b, 1);
+        StaticBuffer face_positions_b(face_positions, GL_ARRAY_BUFFER);
+        StaticBuffer face_uvs_b(face_uvs, GL_ARRAY_BUFFER);
+
+        StaticBuffer axis_positions_b(axis_positions, GL_ARRAY_BUFFER);
+        StaticBuffer axis_colors_b(axis_colors, GL_ARRAY_BUFFER);
+
+        VertexArrayObject face_vao{};
+        face_vao.attach_shader(basic_s);
+        face_vao.attach_buffer_object("v_position", face_positions_b);
+        face_vao.attach_buffer_object("v_uv", face_uvs_b);
+        face_vao.attach_buffer_object("v_offset", offsets_b, 1);
+
+        VertexArrayObject axis_vao{};
+        axis_vao.attach_shader(axis_s);
+        axis_vao.attach_buffer_object("v_position", axis_positions_b);
+        axis_vao.attach_buffer_object("v_color", axis_colors_b);
 
         // imgui vars
         bool imgui_wireframe{false};
         bool imgui_vsync{true};
+
+        glLineWidth(10);
 
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
@@ -287,6 +321,8 @@ int main(int argc, char* argv[])
             );
             basic_s.update_uniform_mat4f("view", view);
             basic_s.update_uniform_mat4f("proj", proj);
+            axis_s.update_uniform_mat4f("view", view);
+            axis_s.update_uniform_mat4f("proj", proj);
 
             // clear screen white
             vec4 constexpr bg_color{1, 1, 1, 1};
@@ -294,13 +330,16 @@ int main(int argc, char* argv[])
             glClearBufferfv(GL_COLOR, 0, glm::value_ptr(bg_color));
 
             // draw
-            vao.bind();
+            face_vao.bind();
             glDrawArraysInstanced(
                 GL_TRIANGLE_STRIP,
                 0,
-                positions.size(),
+                face_positions.size(),
                 offsets.size()
             );
+
+            axis_vao.bind();
+            glDrawArrays(GL_LINES, 0, axis_positions.size());
 
             // draw the imgui window
             ImGui_ImplOpenGL3_NewFrame();
