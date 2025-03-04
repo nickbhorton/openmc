@@ -97,3 +97,31 @@ void VertexArrayObject::attach_buffer_object(
         glVertexAttribDivisor(attrib_location, divisor);
     }
 }
+
+template <>
+void VertexArrayObject::attach_buffer_object(
+    std::string const& attribute_name,
+    StaticBuffer<uint32_t>& buffer,
+    GLuint divisor
+)
+{
+    GLint const attrib_location =
+        glGetAttribLocation(shader_name, attribute_name.c_str());
+    if (attrib_location < 0) {
+        std::cout << "vertex attrib '" << attribute_name << "' was not found"
+                  << "\n";
+    }
+    glBindVertexArray(name);
+    buffer.bind();
+    glVertexAttribIPointer(
+        attrib_location, // index
+        1,               // number of numbers
+        GL_UNSIGNED_INT, // type
+        0,
+        BUFFER_OFFSET(0) // how far into the buffer is the fisrt num
+    );
+    glEnableVertexAttribArray(attrib_location);
+    if (divisor > 0) {
+        glVertexAttribDivisor(attrib_location, divisor);
+    }
+}

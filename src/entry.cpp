@@ -13,13 +13,13 @@
 #include <imgui_impl_opengl3.h>
 
 #include "chunk.h"
-#include "geometry.h"
 #include "texture.h"
 #include "vao.h"
 
 #include <array>
 #include <cstdio>
 #include <iostream>
+#include <limits>
 
 typedef glm::vec4 vec4;
 typedef glm::vec3 vec3;
@@ -212,33 +212,36 @@ int main(int argc, char* argv[])
         };
 
         Chunk test_chunk{};
-        test_chunk.set_block_mask(0, 0, 0);
-        test_chunk.set_block_mask(0, 2, 0);
-        test_chunk.set_block_mask(2, 0, 0);
-        test_chunk.set_block_mask(2, 0, 2);
-        test_chunk.set_block_mask(2, 2, 2);
+        for (size_t i = 0; i < test_chunk.block_mask.size(); i++) {
+            test_chunk.block_mask[i] = std::numeric_limits<uint64_t>::max();
+        }
 
-        std::vector<std::array<float, 3>> offsets{};
-        for (uint32_t x = 0; x < g_chunk_size[0]; x++) {
-            for (uint32_t z = 0; z < g_chunk_size[2]; z++) {
-                for (uint32_t y = 0; y < g_chunk_size[1]; y++) {
+        std::vector<uint32_t> offsets{};
+        for (uint32_t x = 0; x < g_chunk_size; x++) {
+            for (uint32_t z = 0; z < g_chunk_size; z++) {
+                for (uint32_t y = 0; y < g_chunk_size; y++) {
                     if (test_chunk.test_block_mask(x, y, z)) {
-                        offsets.push_back(
-                            {static_cast<float>(x),
-                             static_cast<float>(y),
-                             static_cast<float>(z)}
-                        );
+                        offsets.push_back((0 << 18) | (z << 12) | (y << 6) | x);
+                        offsets.push_back((1 << 18) | (z << 12) | (y << 6) | x);
+                        offsets.push_back((2 << 18) | (z << 12) | (y << 6) | x);
+                        offsets.push_back((3 << 18) | (z << 12) | (y << 6) | x);
+                        offsets.push_back((4 << 18) | (z << 12) | (y << 6) | x);
+                        offsets.push_back((5 << 18) | (z << 12) | (y << 6) | x);
                     }
                 }
             }
         }
+
         StaticBuffer offsets_b(offsets, GL_ARRAY_BUFFER);
         std::cout << offsets.size() << "\n";
 
-        auto const [positions, uvs, normals] = cube_geometry();
+        std::vector<std::array<float, 3>> positions{
+            {{0, 0, 0}, {1, 0, 0}, {0, 0, 1}, {1, 0, 1}}
+        };
+        std::vector<std::array<float, 2>> uvs{{{0, 0}, {1, 0}, {0, 1}, {1, 1}}};
+
         StaticBuffer positions_b(positions, GL_ARRAY_BUFFER);
         StaticBuffer uvs_b(uvs, GL_ARRAY_BUFFER);
-        StaticBuffer normals_b(normals, GL_ARRAY_BUFFER);
 
         VertexArrayObject vao{};
         vao.attach_shader(basic_s);
@@ -293,7 +296,7 @@ int main(int argc, char* argv[])
             // draw
             vao.bind();
             glDrawArraysInstanced(
-                GL_TRIANGLES,
+                GL_TRIANGLE_STRIP,
                 0,
                 positions.size(),
                 offsets.size()

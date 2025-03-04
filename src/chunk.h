@@ -3,9 +3,9 @@
 #include <array>
 #include <cstdint>
 
-static constexpr std::array<uint32_t, 3> g_chunk_size{{16, 256, 16}};
+static constexpr uint32_t g_chunk_size{32};
 static constexpr uint32_t blocks_in_chunk{
-    g_chunk_size[0] * g_chunk_size[1] * g_chunk_size[2]
+    g_chunk_size * g_chunk_size * g_chunk_size
 };
 
 struct Chunk {

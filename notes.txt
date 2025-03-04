@@ -1,0 +1,14 @@
+0x 000 000000 000000 000000
+   1   2      3      4
+
+1: geometry type
+    0: up
+    1: down
+    2: north
+    3: east
+    4: south
+    5: west
+
+2: chunk z position
+3: chunk y position
+4: chunk x position
