@@ -25,27 +25,51 @@ void main() {
     4: south
     5: west
     */
-    uint rot = (v_offset >> 18) & 7;
-    if (rot == 1) {
+    uint direction = (v_offset >> 18) & 7;
+    if (direction == 1) {
         base_pos.y = 1.0 - base_pos.y;
         base_pos.x = 1.0 - base_pos.x;
     }
-    else if (rot == 2) {
+    else if (direction == 2) {
         base_pos.y = base_pos.y + 1.0;
         base_pos.yz = base_pos.zy;
     }
-    else if (rot == 3) {
+    else if (direction == 3) {
         base_pos.x = 1.0 - base_pos.x;
         base_pos.xy = base_pos.yx;
     }
-    else if (rot == 4) {
+    else if (direction == 4) {
         base_pos.z = 1.0 - base_pos.z;
         base_pos.yz = base_pos.zy;
     }
-    else if (rot == 5) {
+    else if (direction == 5) {
         base_pos.y = base_pos.y + 1.0;
         base_pos.xy = base_pos.yx;
     }
+
     gl_Position = proj * view * (base_pos + vec4(offset, 0.0));
-    f_uv = v_uv;
+
+    vec2 uv_array[16];
+    uint tex_rotation = (v_offset >> 21) & 3;
+    uv_array[0] = vec2(0.0,0.0);
+    uv_array[1] = vec2(1.0,0.0);
+    uv_array[2] = vec2(0.0,1.0);
+    uv_array[3] = vec2(1.0,1.0);
+
+    uv_array[4] = vec2(1.0,0.0);
+    uv_array[5] = vec2(1.0,1.0);
+    uv_array[6] = vec2(0.0,0.0);
+    uv_array[7] = vec2(0.0,1.0);
+
+    uv_array[8] = vec2(1.0,1.0);
+    uv_array[9] = vec2(0.0,1.0);
+    uv_array[10] = vec2(1.0,0.0);
+    uv_array[11] = vec2(0.0,0.0);
+
+    uv_array[12] = vec2(0.0,1.0);
+    uv_array[13] = vec2(0.0,0.0);
+    uv_array[14] = vec2(1.0,1.0);
+    uv_array[15] = vec2(1.0,0.0);
+
+    f_uv = uv_array[(4 * tex_rotation) + gl_VertexID];
 }

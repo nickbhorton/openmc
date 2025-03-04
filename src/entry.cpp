@@ -27,6 +27,8 @@ typedef glm::vec2 vec2;
 
 typedef glm::ivec2 ivec2;
 
+typedef glm::uvec3 uvec3;
+
 typedef glm::mat4 mat4;
 
 enum Direction {
@@ -38,11 +40,18 @@ enum Direction {
     West = 5,
 };
 
+enum TextureRotation {
+    None = 0,
+    CW90 = 1,
+    CW180 = 2,
+    CW270 = 3,
+};
+
 ivec2 g_window_size(200, 200);
 ivec2 g_last{g_window_size[0] / 2, g_window_size[1] / 2};
-float g_yaw{-90.0};
-float g_pitch{0.0};
-vec3 g_camera_position = vec3(0.0, 0.0, 3.0);
+float g_yaw{45.0};
+float g_pitch{11.5};
+vec3 g_camera_position = vec3(-3.0, -1.0, -3.0);
 vec3 camera_up = vec3(0.0, 1.0, 0.0);
 vec3 camera_direction = vec3(
     cos(glm::radians(g_yaw)) * cos(glm::radians(g_pitch)),
@@ -173,6 +182,13 @@ void frame_input(GLFWwindow* window)
     }
 }
 
+static uint32_t
+generate_face_info(uvec3 position, Direction dir, TextureRotation rot)
+{
+    return (rot << 21) | (dir << 18) | (position.z << 12) | (position.y << 6) |
+           position.x;
+}
+
 int main(int argc, char* argv[])
 {
     glfwInit();
@@ -229,7 +245,6 @@ int main(int argc, char* argv[])
         for (size_t i = 0; i < test_chunk.block_mask.size(); i++) {
             test_chunk.block_mask[i] = std::numeric_limits<uint64_t>::max();
         }
-        test_chunk.unset_block_mask(8, 8, 8);
 
         std::vector<uint32_t> offsets{};
         for (uint32_t x = 0; x < g_chunk_size; x++) {
@@ -237,39 +252,46 @@ int main(int argc, char* argv[])
                 for (uint32_t y = 0; y < g_chunk_size; y++) {
                     if (test_chunk.test_block_mask(x, y, z)) {
                         if (!test_chunk.test_block_mask(x, y - 1, z)) {
-                            offsets.push_back(
-                                (Direction::Down << 18) | (z << 12) | (y << 6) |
-                                x
-                            );
+                            offsets.push_back(generate_face_info(
+                                uvec3(x, y, z),
+                                Direction::Down,
+                                TextureRotation::None
+                            ));
                         }
                         if (!test_chunk.test_block_mask(x, y + 1, z)) {
-                            offsets.push_back(
-                                (Direction::Up << 18) | (z << 12) | (y << 6) | x
-                            );
+                            offsets.push_back(generate_face_info(
+                                uvec3(x, y, z),
+                                Direction::Up,
+                                TextureRotation::CW180
+                            ));
                         }
                         if (!test_chunk.test_block_mask(x, y, z + 1)) {
-                            offsets.push_back(
-                                (Direction::North << 18) | (z << 12) |
-                                (y << 6) | x
-                            );
+                            offsets.push_back(generate_face_info(
+                                uvec3(x, y, z),
+                                Direction::North,
+                                TextureRotation::CW180
+                            ));
                         }
                         if (!test_chunk.test_block_mask(x - 1, y, z)) {
-                            offsets.push_back(
-                                (Direction::East << 18) | (z << 12) | (y << 6) |
-                                x
-                            );
+                            offsets.push_back(generate_face_info(
+                                uvec3(x, y, z),
+                                Direction::East,
+                                TextureRotation::CW90
+                            ));
                         }
                         if (!test_chunk.test_block_mask(x, y, z - 1)) {
-                            offsets.push_back(
-                                (Direction::South << 18) | (z << 12) |
-                                (y << 6) | x
-                            );
+                            offsets.push_back(generate_face_info(
+                                uvec3(x, y, z),
+                                Direction::South,
+                                TextureRotation::None
+                            ));
                         }
                         if (!test_chunk.test_block_mask(x + 1, y, z)) {
-                            offsets.push_back(
-                                (Direction::West << 18) | (z << 12) | (y << 6) |
-                                x
-                            );
+                            offsets.push_back(generate_face_info(
+                                uvec3(x, y, z),
+                                Direction::West,
+                                TextureRotation::CW270
+                            ));
                         }
                     }
                 }
@@ -281,9 +303,6 @@ int main(int argc, char* argv[])
 
         std::vector<std::array<float, 3>> face_positions{
             {{0, 0, 0}, {1, 0, 0}, {0, 0, 1}, {1, 0, 1}}
-        };
-        std::vector<std::array<float, 2>> face_uvs{
-            {{0, 0}, {1, 0}, {0, 1}, {1, 1}}
         };
 
         std::vector<std::array<float, 3>> axis_positions{{
@@ -304,7 +323,6 @@ int main(int argc, char* argv[])
         }};
 
         StaticBuffer face_positions_b(face_positions, GL_ARRAY_BUFFER);
-        StaticBuffer face_uvs_b(face_uvs, GL_ARRAY_BUFFER);
 
         StaticBuffer axis_positions_b(axis_positions, GL_ARRAY_BUFFER);
         StaticBuffer axis_colors_b(axis_colors, GL_ARRAY_BUFFER);
@@ -312,7 +330,6 @@ int main(int argc, char* argv[])
         VertexArrayObject face_vao{};
         face_vao.attach_shader(basic_s);
         face_vao.attach_buffer_object("v_position", face_positions_b);
-        face_vao.attach_buffer_object("v_uv", face_uvs_b);
         face_vao.attach_buffer_object("v_offset", offsets_b, 1);
 
         VertexArrayObject axis_vao{};
