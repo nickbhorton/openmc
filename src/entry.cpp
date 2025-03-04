@@ -29,6 +29,15 @@ typedef glm::ivec2 ivec2;
 
 typedef glm::mat4 mat4;
 
+enum Direction {
+    Down = 0,
+    Up = 1,
+    North = 2,
+    East = 3,
+    South = 4,
+    West = 5,
+};
+
 ivec2 g_window_size(200, 200);
 ivec2 g_last{g_window_size[0] / 2, g_window_size[1] / 2};
 float g_yaw{-90.0};
@@ -176,7 +185,7 @@ int main(int argc, char* argv[])
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
-    glFrontFace(GL_CW);
+    glFrontFace(GL_CCW);
     glCullFace(GL_BACK);
 
     glViewport(0, 0, g_window_size[0], g_window_size[1]);
@@ -220,18 +229,48 @@ int main(int argc, char* argv[])
         for (size_t i = 0; i < test_chunk.block_mask.size(); i++) {
             test_chunk.block_mask[i] = std::numeric_limits<uint64_t>::max();
         }
+        test_chunk.unset_block_mask(8, 8, 8);
 
         std::vector<uint32_t> offsets{};
         for (uint32_t x = 0; x < g_chunk_size; x++) {
             for (uint32_t z = 0; z < g_chunk_size; z++) {
                 for (uint32_t y = 0; y < g_chunk_size; y++) {
                     if (test_chunk.test_block_mask(x, y, z)) {
-                        offsets.push_back((0 << 18) | (z << 12) | (y << 6) | x);
-                        offsets.push_back((1 << 18) | (z << 12) | (y << 6) | x);
-                        offsets.push_back((2 << 18) | (z << 12) | (y << 6) | x);
-                        offsets.push_back((3 << 18) | (z << 12) | (y << 6) | x);
-                        offsets.push_back((4 << 18) | (z << 12) | (y << 6) | x);
-                        offsets.push_back((5 << 18) | (z << 12) | (y << 6) | x);
+                        if (!test_chunk.test_block_mask(x, y - 1, z)) {
+                            offsets.push_back(
+                                (Direction::Down << 18) | (z << 12) | (y << 6) |
+                                x
+                            );
+                        }
+                        if (!test_chunk.test_block_mask(x, y + 1, z)) {
+                            offsets.push_back(
+                                (Direction::Up << 18) | (z << 12) | (y << 6) | x
+                            );
+                        }
+                        if (!test_chunk.test_block_mask(x, y, z + 1)) {
+                            offsets.push_back(
+                                (Direction::North << 18) | (z << 12) |
+                                (y << 6) | x
+                            );
+                        }
+                        if (!test_chunk.test_block_mask(x - 1, y, z)) {
+                            offsets.push_back(
+                                (Direction::East << 18) | (z << 12) | (y << 6) |
+                                x
+                            );
+                        }
+                        if (!test_chunk.test_block_mask(x, y, z - 1)) {
+                            offsets.push_back(
+                                (Direction::South << 18) | (z << 12) |
+                                (y << 6) | x
+                            );
+                        }
+                        if (!test_chunk.test_block_mask(x + 1, y, z)) {
+                            offsets.push_back(
+                                (Direction::West << 18) | (z << 12) | (y << 6) |
+                                x
+                            );
+                        }
                     }
                 }
             }
@@ -284,8 +323,6 @@ int main(int argc, char* argv[])
         // imgui vars
         bool imgui_wireframe{false};
         bool imgui_vsync{true};
-
-        glLineWidth(10);
 
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
