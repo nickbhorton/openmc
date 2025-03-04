@@ -1,3 +1,4 @@
+
 #include <glad/gl.h>
 
 #include <GLFW/glfw3.h>
@@ -13,6 +14,7 @@
 #include <imgui_impl_opengl3.h>
 
 #include "chunk.h"
+#include "image.h"
 #include "texture.h"
 #include "vao.h"
 
@@ -241,10 +243,35 @@ int main(int argc, char* argv[])
             0
         };
 
+        {
+            Image image1{"/home/nick-dev/res/minecraft/textures/block/stone.png"
+            };
+            Image image2{
+                "/home/nick-dev/res/minecraft/textures/block/diorite.png"
+            };
+            Image image3{
+                "/home/nick-dev/res/minecraft/textures/block/granite.png"
+            };
+            Image image4{
+                "/home/nick-dev/res/minecraft/textures/block/andesite.png"
+            };
+
+            std::vector<Image const*> images_to_stitch{};
+            images_to_stitch.push_back(&image1);
+            images_to_stitch.push_back(&image2);
+            images_to_stitch.push_back(&image3);
+            images_to_stitch.push_back(&image4);
+
+            Image stiched{images_to_stitch, 2};
+        }
+
         Chunk test_chunk{};
+        /*
         for (size_t i = 0; i < test_chunk.block_mask.size(); i++) {
             test_chunk.block_mask[i] = std::numeric_limits<uint64_t>::max();
         }
+        */
+        test_chunk.set_block_mask(0, 0, 0);
 
         std::vector<uint32_t> offsets{};
         for (uint32_t x = 0; x < g_chunk_size; x++) {
@@ -255,42 +282,42 @@ int main(int argc, char* argv[])
                             offsets.push_back(generate_face_info(
                                 uvec3(x, y, z),
                                 Direction::Down,
-                                TextureRotation::None
+                                TextureRotation::CW180
                             ));
                         }
                         if (!test_chunk.test_block_mask(x, y + 1, z)) {
                             offsets.push_back(generate_face_info(
                                 uvec3(x, y, z),
                                 Direction::Up,
-                                TextureRotation::CW180
+                                TextureRotation::None
                             ));
                         }
                         if (!test_chunk.test_block_mask(x, y, z + 1)) {
                             offsets.push_back(generate_face_info(
                                 uvec3(x, y, z),
                                 Direction::North,
-                                TextureRotation::CW180
+                                TextureRotation::None
                             ));
                         }
                         if (!test_chunk.test_block_mask(x - 1, y, z)) {
                             offsets.push_back(generate_face_info(
                                 uvec3(x, y, z),
                                 Direction::East,
-                                TextureRotation::CW90
+                                TextureRotation::CW270
                             ));
                         }
                         if (!test_chunk.test_block_mask(x, y, z - 1)) {
                             offsets.push_back(generate_face_info(
                                 uvec3(x, y, z),
                                 Direction::South,
-                                TextureRotation::None
+                                TextureRotation::CW180
                             ));
                         }
                         if (!test_chunk.test_block_mask(x + 1, y, z)) {
                             offsets.push_back(generate_face_info(
                                 uvec3(x, y, z),
                                 Direction::West,
-                                TextureRotation::CW270
+                                TextureRotation::CW90
                             ));
                         }
                     }
