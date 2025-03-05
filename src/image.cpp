@@ -3,9 +3,10 @@
 #include <iostream>
 
 #include <stb/stb_image.h>
+#include <string.h>
 
 Image::Image(std::string const& path)
-    : data{nullptr}, size{}, number_of_channels{}
+    : data{nullptr}, size{}, number_of_channels{}, is_stb{true}
 {
     stbi_set_flip_vertically_on_load(true);
     data = stbi_load(path.c_str(), &size[0], &size[1], &number_of_channels, 0);
@@ -17,9 +18,17 @@ Image::Image(std::string const& path)
     }
 }
 
-Image::~Image() { stbi_image_free(data); }
+Image::~Image()
+{
+    if (is_stb) {
+        stbi_image_free(data);
+    } else {
+        free(data);
+    }
+}
 
-std::array<unsigned char, 3> Image::get_pixel(unsigned int x, unsigned int y)
+std::array<unsigned char, 3>
+Image::get_pixel(unsigned int x, unsigned int y) const
 {
     size_t index = (y * size[1] + x) * number_of_channels;
     switch (number_of_channels) {
@@ -39,7 +48,7 @@ std::array<unsigned char, 3> Image::get_pixel(unsigned int x, unsigned int y)
 }
 
 Image::Image(std::vector<Image const*> const& to_stitch, size_t cols_per_row)
-    : data{nullptr}, size{}, number_of_channels{}
+    : data{nullptr}, size{}, number_of_channels{}, is_stb{false}
 {
     if (to_stitch.size() == 0) {
         return;
@@ -51,7 +60,32 @@ Image::Image(std::vector<Image const*> const& to_stitch, size_t cols_per_row)
             return;
         }
     }
+
     size[0] = (to_stitch.size() / cols_per_row) * first_img_size[0];
     size[1] = cols_per_row * first_img_size[1];
-    std::cout << size[0] << "x" << size[1] << "\n";
+    number_of_channels = 3;
+
+    data = static_cast<unsigned char*>(malloc(3 * size[0] * size[1]));
+    memset(data, 0, 3 * size[0] * size[1]);
+
+    for (size_t i = 0; i < to_stitch.size() / cols_per_row; i++) {
+        for (size_t j = 0; j < cols_per_row; j++) {
+            for (size_t y = 0; y < first_img_size[1]; y++) {
+                for (size_t x = 0; x < first_img_size[0]; x++) {
+                    size_t image_idx =
+                        i * (to_stitch.size() / cols_per_row) + j;
+                    if (image_idx < to_stitch.size()) {
+                        auto pix = to_stitch[image_idx]->get_pixel(x, y);
+                        size_t row = (i * first_img_size[0]) + y;
+                        size_t col = (j * first_img_size[1]) + x;
+                        size_t idx = ((row * size[1] + col)) * 3;
+                        data[idx + 0] = pix[0];
+                        data[idx + 1] = pix[1];
+                        data[idx + 2] = pix[2];
+                    }
+                }
+            }
+        }
+    }
+    std::cout << "\n";
 }

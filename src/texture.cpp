@@ -57,4 +57,42 @@ Texture::Texture(std::string const& path, int active_texture)
     stbi_image_free(data);
 }
 
+Texture::Texture(Image const& img, int active_texture)
+{
+    glGenTextures(1, &name);
+    glActiveTexture(active_texture);
+    glBindTexture(GL_TEXTURE_2D, name);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    GLenum channels;
+    if (img.number_of_channels == 4) {
+        channels = GL_RGBA;
+    } else if (img.number_of_channels == 3) {
+        channels = GL_RGB;
+    } else if (img.number_of_channels == 2) {
+        channels = GL_RG;
+    } else if (img.number_of_channels == 1) {
+        channels = GL_RED;
+    } else {
+        std::cerr << "texture has unsupported number of channels "
+                  << number_of_channels << "\n";
+    }
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_RGBA,
+        img.size[0],
+        img.size[1],
+        0,
+        channels,
+        GL_UNSIGNED_BYTE,
+        img.data
+    );
+    glGenerateMipmap(GL_TEXTURE_2D);
+}
+
 Texture::~Texture() { glDeleteTextures(1, &name); }

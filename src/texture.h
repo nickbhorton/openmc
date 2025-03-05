@@ -6,6 +6,8 @@
 
 #include <string>
 
+#include "image.h"
+
 class Texture
 {
     GLuint name;
@@ -15,5 +17,6 @@ public:
     glm::ivec2 size;
 
     Texture(std::string const& path, int active_texture);
+    Texture(Image const& img, int active_texture);
     ~Texture();
 };

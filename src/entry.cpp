@@ -22,6 +22,7 @@
 #include <cstdio>
 #include <iostream>
 #include <limits>
+#include <memory>
 
 typedef glm::vec4 vec4;
 typedef glm::vec3 vec3;
@@ -238,32 +239,28 @@ int main(int argc, char* argv[])
              {"../res/shaders/axis.frag.glsl", GL_FRAGMENT_SHADER}}
         );
 
-        Texture texture{
-            "/home/nick-dev/res/minecraft/textures/block/stone.png",
-            0
+        std::string block_texture_dir =
+            "/home/nick-dev/res/minecraft/textures/block/";
+
+        std::vector<std::string> block_texture_filenames{
+            "stone.png",
+            "grass_block_side.png",
+            "grass_block_top.png",
+            "sand.png"
         };
-
-        {
-            Image image1{"/home/nick-dev/res/minecraft/textures/block/stone.png"
-            };
-            Image image2{
-                "/home/nick-dev/res/minecraft/textures/block/diorite.png"
-            };
-            Image image3{
-                "/home/nick-dev/res/minecraft/textures/block/granite.png"
-            };
-            Image image4{
-                "/home/nick-dev/res/minecraft/textures/block/andesite.png"
-            };
-
-            std::vector<Image const*> images_to_stitch{};
-            images_to_stitch.push_back(&image1);
-            images_to_stitch.push_back(&image2);
-            images_to_stitch.push_back(&image3);
-            images_to_stitch.push_back(&image4);
-
-            Image stiched{images_to_stitch, 2};
+        std::vector<std::unique_ptr<Image>> images;
+        for (auto const& path : block_texture_filenames) {
+            images.push_back(std::make_unique<Image>(block_texture_dir + path));
         }
+
+        std::vector<Image const*> images_to_stitch{};
+        for (auto const& img : images) {
+            images_to_stitch.push_back(img.get());
+        }
+
+        Image stiched{images_to_stitch, 2};
+
+        Texture texture{stiched, 0};
 
         Chunk test_chunk{};
         /*

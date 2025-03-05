@@ -4,12 +4,10 @@
 #include <string>
 #include <vector>
 
-class Image
-{
-    unsigned char* data;
+struct Image {
+    bool is_stb;
     int number_of_channels;
-
-public:
+    unsigned char* data;
     std::array<int, 2> size;
 
     Image(std::string const& path);
@@ -21,5 +19,6 @@ public:
     Image& operator=(Image const& other) = delete;
     Image& operator=(Image&& other) noexcept = delete;
 
-    std::array<unsigned char, 3> get_pixel(unsigned int x, unsigned int y);
+    std::array<unsigned char, 3>
+    get_pixel(unsigned int x, unsigned int y) const;
 };
