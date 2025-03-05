@@ -13,6 +13,7 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
+#include "block.h"
 #include "chunk.h"
 #include "face.h"
 #include "image.h"
@@ -49,6 +50,19 @@ vec3 camera_direction = vec3(
 );
 bool mouse_capture{};
 bool first_mouse_update{true};
+
+namespace block
+{
+Block const stone(
+    {{{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}}},
+    {TextureRotation::CW180,
+     TextureRotation::None,
+     TextureRotation::None,
+     TextureRotation::CW270,
+     TextureRotation::CW180,
+     TextureRotation::CW90}
+);
+}
 
 static void glfw_error_callback(int error, const char* desc)
 {
@@ -242,12 +256,10 @@ int main(int argc, char* argv[])
         Texture texture{stiched, 0};
 
         Chunk test_chunk{};
-        /*
         for (size_t i = 0; i < test_chunk.block_mask.size(); i++) {
             test_chunk.block_mask[i] = std::numeric_limits<uint64_t>::max();
         }
-        */
-        test_chunk.set_block_mask(0, 0, 0);
+        // test_chunk.set_block_mask(0, 0, 0);
 
         std::vector<uint32_t> offsets{};
         for (uint32_t x = 0; x < g_chunk_size; x++) {
@@ -255,51 +267,38 @@ int main(int argc, char* argv[])
                 for (uint32_t y = 0; y < g_chunk_size; y++) {
                     if (test_chunk.test_block_mask(x, y, z)) {
                         if (!test_chunk.test_block_mask(x, y - 1, z)) {
-                            offsets.push_back(generate_face_info(
-                                uvec3(x, y, z),
-                                uvec2(0, 0),
-                                Direction::Down,
-                                TextureRotation::CW180
+                            offsets.push_back(block::stone.get_face(
+                                {x, y, z},
+                                Direction::Down
                             ));
                         }
                         if (!test_chunk.test_block_mask(x, y + 1, z)) {
-                            offsets.push_back(generate_face_info(
-                                uvec3(x, y, z),
-                                uvec2(0, 0),
-                                Direction::Up,
-                                TextureRotation::None
-                            ));
+                            offsets.push_back(
+                                block::stone.get_face({x, y, z}, Direction::Up)
+                            );
                         }
                         if (!test_chunk.test_block_mask(x, y, z + 1)) {
-                            offsets.push_back(generate_face_info(
-                                uvec3(x, y, z),
-                                uvec2(0, 0),
-                                Direction::North,
-                                TextureRotation::None
+                            offsets.push_back(block::stone.get_face(
+                                {x, y, z},
+                                Direction::North
                             ));
                         }
                         if (!test_chunk.test_block_mask(x - 1, y, z)) {
-                            offsets.push_back(generate_face_info(
-                                uvec3(x, y, z),
-                                uvec2(0, 0),
-                                Direction::East,
-                                TextureRotation::CW270
+                            offsets.push_back(block::stone.get_face(
+                                {x, y, z},
+                                Direction::East
                             ));
                         }
                         if (!test_chunk.test_block_mask(x, y, z - 1)) {
-                            offsets.push_back(generate_face_info(
-                                uvec3(x, y, z),
-                                uvec2(0, 0),
-                                Direction::South,
-                                TextureRotation::CW180
+                            offsets.push_back(block::stone.get_face(
+                                {x, y, z},
+                                Direction::South
                             ));
                         }
                         if (!test_chunk.test_block_mask(x + 1, y, z)) {
-                            offsets.push_back(generate_face_info(
-                                uvec3(x, y, z),
-                                uvec2(0, 0),
-                                Direction::West,
-                                TextureRotation::CW90
+                            offsets.push_back(block::stone.get_face(
+                                {x, y, z},
+                                Direction::West
                             ));
                         }
                     }

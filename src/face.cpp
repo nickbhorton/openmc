@@ -1,13 +1,12 @@
 #include "face.h"
 
 uint32_t generate_face_info(
-    glm::uvec3 position,
-    glm::uvec2 texture,
+    std::array<uint32_t, 3> position,
+    std::array<uint32_t, 2> texture,
     Direction dir,
     TextureRotation rot
 )
 {
-    return (texture.y << 24) | (texture.x << 23) | (rot << 21) | (dir << 18) |
-           (position.z << 12) | (position.y << 6) | position.x;
+    return (texture[1] << 24) | (texture[0] << 23) | (rot << 21) | (dir << 18) |
+           (position[2] << 12) | (position[1] << 6) | position[0];
 }
-

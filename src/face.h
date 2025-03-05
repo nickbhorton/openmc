@@ -1,8 +1,7 @@
-#pragma once
+    #pragma once
 
+#include <array>
 #include <cstdint>
-#include <glm/ext/vector_uint2.hpp>
-#include <glm/ext/vector_uint3.hpp>
 
 enum Direction {
     Down = 0,
@@ -21,8 +20,8 @@ enum TextureRotation {
 };
 
 uint32_t generate_face_info(
-    glm::uvec3 position,
-    glm::uvec2 texture,
+    std::array<uint32_t, 3> position,
+    std::array<uint32_t, 2> texture,
     Direction dir,
     TextureRotation rot
 );
