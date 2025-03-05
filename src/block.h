@@ -5,6 +5,13 @@
 
 #include "face.h"
 
+namespace block
+{
+uint32_t constexpr stone = 1;
+uint32_t constexpr sand = 2;
+uint32_t constexpr grass = 3;
+} // namespace block
+
 class Block
 {
     std::array<std::array<uint32_t, 2>, 6> face_textures;
