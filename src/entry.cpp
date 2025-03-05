@@ -31,6 +31,7 @@ typedef glm::vec2 vec2;
 typedef glm::ivec2 ivec2;
 
 typedef glm::uvec3 uvec3;
+typedef glm::uvec2 uvec2;
 
 typedef glm::mat4 mat4;
 
@@ -185,11 +186,15 @@ void frame_input(GLFWwindow* window)
     }
 }
 
-static uint32_t
-generate_face_info(uvec3 position, Direction dir, TextureRotation rot)
+static uint32_t generate_face_info(
+    uvec3 position,
+    uvec2 texture,
+    Direction dir,
+    TextureRotation rot
+)
 {
-    return (rot << 21) | (dir << 18) | (position.z << 12) | (position.y << 6) |
-           position.x;
+    return (texture.y << 24) | (texture.x << 23) | (rot << 21) | (dir << 18) |
+           (position.z << 12) | (position.y << 6) | position.x;
 }
 
 int main(int argc, char* argv[])
@@ -278,6 +283,7 @@ int main(int argc, char* argv[])
                         if (!test_chunk.test_block_mask(x, y - 1, z)) {
                             offsets.push_back(generate_face_info(
                                 uvec3(x, y, z),
+                                uvec2(0, 0),
                                 Direction::Down,
                                 TextureRotation::CW180
                             ));
@@ -285,6 +291,7 @@ int main(int argc, char* argv[])
                         if (!test_chunk.test_block_mask(x, y + 1, z)) {
                             offsets.push_back(generate_face_info(
                                 uvec3(x, y, z),
+                                uvec2(0, 0),
                                 Direction::Up,
                                 TextureRotation::None
                             ));
@@ -292,6 +299,7 @@ int main(int argc, char* argv[])
                         if (!test_chunk.test_block_mask(x, y, z + 1)) {
                             offsets.push_back(generate_face_info(
                                 uvec3(x, y, z),
+                                uvec2(0, 0),
                                 Direction::North,
                                 TextureRotation::None
                             ));
@@ -299,6 +307,7 @@ int main(int argc, char* argv[])
                         if (!test_chunk.test_block_mask(x - 1, y, z)) {
                             offsets.push_back(generate_face_info(
                                 uvec3(x, y, z),
+                                uvec2(0, 0),
                                 Direction::East,
                                 TextureRotation::CW270
                             ));
@@ -306,6 +315,7 @@ int main(int argc, char* argv[])
                         if (!test_chunk.test_block_mask(x, y, z - 1)) {
                             offsets.push_back(generate_face_info(
                                 uvec3(x, y, z),
+                                uvec2(0, 0),
                                 Direction::South,
                                 TextureRotation::CW180
                             ));
@@ -313,6 +323,7 @@ int main(int argc, char* argv[])
                         if (!test_chunk.test_block_mask(x + 1, y, z)) {
                             offsets.push_back(generate_face_info(
                                 uvec3(x, y, z),
+                                uvec2(0, 0),
                                 Direction::West,
                                 TextureRotation::CW90
                             ));

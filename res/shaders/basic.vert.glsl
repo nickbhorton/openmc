@@ -71,5 +71,12 @@ void main() {
     uv_array[14] = vec2(1.0,1.0);
     uv_array[15] = vec2(1.0,0.0);
 
-    f_uv = uv_array[(4 * tex_rotation) + gl_VertexID];
+    uint texture_index_x = (v_offset >> 23) & 1;
+    uint texture_index_y = (v_offset >> 24) & 1;
+    uint texture_discritization = 2;
+
+    f_uv = uv_array[(4 * tex_rotation) + gl_VertexID] 
+        * (1.0 / float(texture_discritization))
+        + (1.0 / float(texture_discritization))
+        * vec2(float(texture_index_x), float(texture_index_y));
 }
