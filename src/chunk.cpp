@@ -47,7 +47,7 @@ static Block const stone(
 );
 
 static Block const sand(
-    {{{1, 1}, {1, 1}, {1, 1}, {1, 1}, {1, 1}, {1, 1}}},
+    {{{0, 1}, {0, 1}, {0, 1}, {0, 1}, {0, 1}, {0, 1}}},
     {TextureRotation::CW180,
      TextureRotation::None,
      TextureRotation::None,
@@ -57,7 +57,7 @@ static Block const sand(
 );
 
 static Block const grass(
-    {{{1, 0}, {0, 1}, {1, 0}, {1, 0}, {1, 0}, {1, 0}}},
+    {{{2, 0}, {2, 0}, {1, 0}, {1, 0}, {1, 0}, {1, 0}}},
     {TextureRotation::CW180,
      TextureRotation::None,
      TextureRotation::None,
@@ -66,7 +66,17 @@ static Block const grass(
      TextureRotation::CW90}
 );
 
-static Block const* blocks[3];
+static Block const dirt(
+    {{{1, 1}, {1, 1}, {1, 1}, {1, 1}, {1, 1}, {1, 1}}},
+    {TextureRotation::CW180,
+     TextureRotation::None,
+     TextureRotation::None,
+     TextureRotation::CW270,
+     TextureRotation::CW180,
+     TextureRotation::CW90}
+);
+
+static Block const* blocks[4];
 static bool blocks_init = false;
 
 std::vector<uint32_t> Chunk::mesh()
@@ -76,6 +86,7 @@ std::vector<uint32_t> Chunk::mesh()
         blocks[block::stone - 1] = &stone;
         blocks[block::sand - 1] = &sand;
         blocks[block::grass - 1] = &grass;
+        blocks[block::dirt - 1] = &dirt;
         blocks_init = true;
     }
 

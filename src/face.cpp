@@ -7,6 +7,6 @@ uint32_t generate_face_info(
     TextureRotation rot
 )
 {
-    return (texture[1] << 24) | (texture[0] << 23) | (rot << 21) | (dir << 18) |
+    return (texture[1] << 25) | (texture[0] << 23) | (rot << 21) | (dir << 18) |
            (position[2] << 12) | (position[1] << 6) | position[0];
 }

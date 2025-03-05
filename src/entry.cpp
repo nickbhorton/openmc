@@ -5,6 +5,7 @@
 
 // glm includes
 #include <glm/geometric.hpp>
+#include <glm/gtc/noise.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
@@ -226,7 +227,12 @@ int main(int argc, char* argv[])
             "stone.png",
             "grass_block_side.png",
             "grass_block_top.png",
-            "sand.png"
+            "sand.png",
+            "dirt.png",
+            "clay.png",
+            "cobblestone.png",
+            "gravel.png",
+            "tuff.png"
         };
         std::vector<std::unique_ptr<Image>> images;
         for (auto const& path : block_texture_filenames) {
@@ -238,20 +244,81 @@ int main(int argc, char* argv[])
             images_to_stitch.push_back(img.get());
         }
 
-        Image stiched{images_to_stitch, 2};
+        Image stiched{images_to_stitch, 3};
 
         Texture texture_atlas{stiched, 0};
 
-        Chunk test_chunk{};
-        test_chunk.set_block(0, 0, 0, block::stone);
-        test_chunk.set_block(2, 0, 0, block::sand);
-        test_chunk.set_block(4, 0, 0, block::grass);
-
-        std::vector<uint32_t> faces{test_chunk.mesh()};
+        std::vector<std::unique_ptr<Chunk>> chunks{};
+        ivec2 chunk_count = ivec2(32, 32);
+        for (size_t cy = 0; cy < chunk_count.y; cy++) {
+            for (size_t cx = 0; cx < chunk_count.x; cx++) {
+                std::unique_ptr<Chunk> test_chunk = std::make_unique<Chunk>();
+                for (size_t i = 0; i < g_chunk_size; i++) {
+                    for (size_t j = 0; j < g_chunk_size; j++) {
+                        float noise = glm::perlin(vec2(
+                            static_cast<float>(cx) +
+                                static_cast<float>(i) / g_chunk_size,
+                            static_cast<float>(cy) +
+                                static_cast<float>(j) / g_chunk_size
+                        ));
+                        uint32_t uint_noise =
+                            3 + static_cast<uint32_t>(std::abs(27.0 * noise));
+                        uint32_t constexpr dirt_width = 3;
+                        for (uint32_t k = 0; k < uint_noise - dirt_width; k++) {
+                            test_chunk->set_block(i, k, j, block::stone);
+                        }
+                        for (uint32_t k = 0; k < dirt_width; k++) {
+                            test_chunk->set_block(
+                                i,
+                                (uint_noise - dirt_width) + k,
+                                j,
+                                block::sand
+                            );
+                        }
+                        test_chunk->set_block(i, uint_noise, j, block::sand);
+                    }
+                }
+                chunks.push_back(std::move(test_chunk));
+            }
+        }
 
         std::vector<std::array<float, 3>> face_position_geometry{
             {{0, 0, 0}, {1, 0, 0}, {0, 0, 1}, {1, 0, 1}}
         };
+
+        StaticBuffer face_position_geometry_b(
+            face_position_geometry,
+            GL_ARRAY_BUFFER
+        );
+
+        std::vector<VertexArrayObject> chunk_vaos{};
+        std::vector<size_t> chunk_face_counts{};
+        std::vector<StaticBuffer<uint32_t>> face_info_buffers{};
+        std::vector<vec2> chunk_position{};
+        for (size_t cy = 0; cy < chunk_count.y; cy++) {
+            for (size_t cx = 0; cx < chunk_count.x; cx++) {
+                VertexArrayObject vao{};
+
+                std::vector<uint32_t> faces{
+                    chunks[cy * chunk_count.y + cx]->mesh()
+                };
+                StaticBuffer faces_b(faces, GL_ARRAY_BUFFER);
+
+                vao.attach_shader(basic_s);
+                vao.attach_buffer_object(
+                    "v_position",
+                    face_position_geometry_b
+                );
+                vao.attach_buffer_object("v_offset", faces_b, 1);
+                chunk_vaos.push_back(std::move(vao));
+                chunk_face_counts.push_back(faces.size());
+                face_info_buffers.push_back(std::move(faces_b));
+                chunk_position.push_back(
+                    {static_cast<float>(cx) * g_chunk_size,
+                     static_cast<float>(cy) * g_chunk_size}
+                );
+            }
+        }
 
         std::vector<std::array<float, 3>> axis_positions{{
             {0, 0, 0},
@@ -269,18 +336,6 @@ int main(int argc, char* argv[])
             {0, 0, 1},
             {0, 0, 1},
         }};
-
-        StaticBuffer face_position_geometry_b(
-            face_position_geometry,
-            GL_ARRAY_BUFFER
-        );
-        StaticBuffer faces_b(faces, GL_ARRAY_BUFFER);
-
-        VertexArrayObject face_vao{};
-        face_vao.attach_shader(basic_s);
-        face_vao.attach_buffer_object("v_position", face_position_geometry_b);
-        face_vao.attach_buffer_object("v_offset", faces_b, 1);
-
         StaticBuffer axis_positions_b(axis_positions, GL_ARRAY_BUFFER);
         StaticBuffer axis_colors_b(axis_colors, GL_ARRAY_BUFFER);
 
@@ -336,13 +391,16 @@ int main(int argc, char* argv[])
             glClearBufferfv(GL_COLOR, 0, glm::value_ptr(bg_color));
 
             // draw
-            face_vao.bind();
-            glDrawArraysInstanced(
-                GL_TRIANGLE_STRIP,
-                0,
-                face_position_geometry.size(),
-                faces.size()
-            );
+            for (size_t c = 0; c < chunk_count.x * chunk_count.y; c++) {
+                chunk_vaos[c].bind();
+                basic_s.update_uniform_vec2f("chunk_offset", chunk_position[c]);
+                glDrawArraysInstanced(
+                    GL_TRIANGLE_STRIP,
+                    0,
+                    face_position_geometry.size(),
+                    chunk_face_counts[c]
+                );
+            }
 
             axis_vao.bind();
             glDrawArrays(GL_LINES, 0, axis_positions.size());

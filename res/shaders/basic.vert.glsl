@@ -5,9 +5,12 @@ in vec2 v_uv;
 in uint v_offset;
 
 out vec2 f_uv;
+out float dim;
 
 uniform mat4 view;
 uniform mat4 proj;
+
+uniform vec2 chunk_offset;
 
 void main() {
     uint x_off = v_offset & 63;
@@ -17,6 +20,7 @@ void main() {
     vec3 offset = vec3(float(x_off), float(y_off), float(z_off));
     vec4 base_pos = v_position;
 
+    dim = 1.0;
     /*
     0: down
     1: up
@@ -33,21 +37,25 @@ void main() {
     else if (direction == 2) {
         base_pos.y = base_pos.y + 1.0;
         base_pos.yz = base_pos.zy;
+        dim = 0.86;
     }
     else if (direction == 3) {
         base_pos.x = 1.0 - base_pos.x;
         base_pos.xy = base_pos.yx;
+        dim = 0.8;
     }
     else if (direction == 4) {
         base_pos.z = 1.0 - base_pos.z;
         base_pos.yz = base_pos.zy;
+        dim = 0.86;
     }
     else if (direction == 5) {
         base_pos.y = base_pos.y + 1.0;
         base_pos.xy = base_pos.yx;
+        dim = 0.8;
     }
 
-    gl_Position = proj * view * (base_pos + vec4(offset, 0.0));
+    gl_Position = proj * view * (vec4(chunk_offset.x, 0.0, chunk_offset.y, 0.0) + base_pos + vec4(offset, 0.0));
 
     vec2 uv_array[16];
     uint tex_rotation = (v_offset >> 21) & 3;
@@ -71,9 +79,9 @@ void main() {
     uv_array[14] = vec2(1.0,1.0);
     uv_array[15] = vec2(1.0,0.0);
 
-    uint texture_index_x = (v_offset >> 23) & 1;
-    uint texture_index_y = (v_offset >> 24) & 1;
-    uint texture_discritization = 2;
+    uint texture_index_x = (v_offset >> 23) & 3;
+    uint texture_index_y = (v_offset >> 25) & 3;
+    uint texture_discritization = 3;
 
     f_uv = uv_array[(4 * tex_rotation) + gl_VertexID] 
         * (1.0 / float(texture_discritization))

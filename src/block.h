@@ -10,6 +10,7 @@ namespace block
 uint32_t constexpr stone = 1;
 uint32_t constexpr sand = 2;
 uint32_t constexpr grass = 3;
+uint32_t constexpr dirt = 4;
 } // namespace block
 
 class Block
