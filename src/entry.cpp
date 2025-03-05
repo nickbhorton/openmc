@@ -253,7 +253,7 @@ int main(int argc, char* argv[])
 
         Image stiched{images_to_stitch, 2};
 
-        Texture texture{stiched, 0};
+        Texture texture_atlas{stiched, 0};
 
         Chunk test_chunk{};
         for (size_t i = 0; i < test_chunk.block_mask.size(); i++) {
@@ -261,42 +261,42 @@ int main(int argc, char* argv[])
         }
         // test_chunk.set_block_mask(0, 0, 0);
 
-        std::vector<uint32_t> offsets{};
+        std::vector<uint32_t> faces{};
         for (uint32_t x = 0; x < g_chunk_size; x++) {
             for (uint32_t z = 0; z < g_chunk_size; z++) {
                 for (uint32_t y = 0; y < g_chunk_size; y++) {
                     if (test_chunk.test_block_mask(x, y, z)) {
                         if (!test_chunk.test_block_mask(x, y - 1, z)) {
-                            offsets.push_back(block::stone.get_face(
+                            faces.push_back(block::stone.get_face(
                                 {x, y, z},
                                 Direction::Down
                             ));
                         }
                         if (!test_chunk.test_block_mask(x, y + 1, z)) {
-                            offsets.push_back(
+                            faces.push_back(
                                 block::stone.get_face({x, y, z}, Direction::Up)
                             );
                         }
                         if (!test_chunk.test_block_mask(x, y, z + 1)) {
-                            offsets.push_back(block::stone.get_face(
+                            faces.push_back(block::stone.get_face(
                                 {x, y, z},
                                 Direction::North
                             ));
                         }
                         if (!test_chunk.test_block_mask(x - 1, y, z)) {
-                            offsets.push_back(block::stone.get_face(
+                            faces.push_back(block::stone.get_face(
                                 {x, y, z},
                                 Direction::East
                             ));
                         }
                         if (!test_chunk.test_block_mask(x, y, z - 1)) {
-                            offsets.push_back(block::stone.get_face(
+                            faces.push_back(block::stone.get_face(
                                 {x, y, z},
                                 Direction::South
                             ));
                         }
                         if (!test_chunk.test_block_mask(x + 1, y, z)) {
-                            offsets.push_back(block::stone.get_face(
+                            faces.push_back(block::stone.get_face(
                                 {x, y, z},
                                 Direction::West
                             ));
@@ -306,9 +306,7 @@ int main(int argc, char* argv[])
             }
         }
 
-        StaticBuffer offsets_b(offsets, GL_ARRAY_BUFFER);
-
-        std::vector<std::array<float, 3>> face_positions{
+        std::vector<std::array<float, 3>> face_position_geometry{
             {{0, 0, 0}, {1, 0, 0}, {0, 0, 1}, {1, 0, 1}}
         };
 
@@ -329,15 +327,19 @@ int main(int argc, char* argv[])
             {0, 0, 1},
         }};
 
-        StaticBuffer face_positions_b(face_positions, GL_ARRAY_BUFFER);
-
-        StaticBuffer axis_positions_b(axis_positions, GL_ARRAY_BUFFER);
-        StaticBuffer axis_colors_b(axis_colors, GL_ARRAY_BUFFER);
+        StaticBuffer face_position_geometry_b(
+            face_position_geometry,
+            GL_ARRAY_BUFFER
+        );
+        StaticBuffer faces_b(faces, GL_ARRAY_BUFFER);
 
         VertexArrayObject face_vao{};
         face_vao.attach_shader(basic_s);
-        face_vao.attach_buffer_object("v_position", face_positions_b);
-        face_vao.attach_buffer_object("v_offset", offsets_b, 1);
+        face_vao.attach_buffer_object("v_position", face_position_geometry_b);
+        face_vao.attach_buffer_object("v_offset", faces_b, 1);
+
+        StaticBuffer axis_positions_b(axis_positions, GL_ARRAY_BUFFER);
+        StaticBuffer axis_colors_b(axis_colors, GL_ARRAY_BUFFER);
 
         VertexArrayObject axis_vao{};
         axis_vao.attach_shader(axis_s);
@@ -395,8 +397,8 @@ int main(int argc, char* argv[])
             glDrawArraysInstanced(
                 GL_TRIANGLE_STRIP,
                 0,
-                face_positions.size(),
-                offsets.size()
+                face_position_geometry.size(),
+                faces.size()
             );
 
             axis_vao.bind();
