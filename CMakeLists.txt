@@ -30,6 +30,7 @@ add_executable(openmc src/entry.cpp
     src/geometry.cpp src/geometry.h
     src/chunk.cpp src/chunk.h
     src/image.cpp src/image.h
+    src/face.cpp src/face.h
 )
 target_link_libraries(openmc PRIVATE glad glfw imgui)
 target_compile_options(openmc PRIVATE -g)

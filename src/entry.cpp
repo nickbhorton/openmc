@@ -14,6 +14,7 @@
 #include <imgui_impl_opengl3.h>
 
 #include "chunk.h"
+#include "face.h"
 #include "image.h"
 #include "texture.h"
 #include "vao.h"
@@ -34,22 +35,6 @@ typedef glm::uvec3 uvec3;
 typedef glm::uvec2 uvec2;
 
 typedef glm::mat4 mat4;
-
-enum Direction {
-    Down = 0,
-    Up = 1,
-    North = 2,
-    East = 3,
-    South = 4,
-    West = 5,
-};
-
-enum TextureRotation {
-    None = 0,
-    CW90 = 1,
-    CW180 = 2,
-    CW270 = 3,
-};
 
 ivec2 g_window_size(200, 200);
 ivec2 g_last{g_window_size[0] / 2, g_window_size[1] / 2};
@@ -184,17 +169,6 @@ void frame_input(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
         g_camera_position -= camera_up * camera_speed;
     }
-}
-
-static uint32_t generate_face_info(
-    uvec3 position,
-    uvec2 texture,
-    Direction dir,
-    TextureRotation rot
-)
-{
-    return (texture.y << 24) | (texture.x << 23) | (rot << 21) | (dir << 18) |
-           (position.z << 12) | (position.y << 6) | position.x;
 }
 
 int main(int argc, char* argv[])
@@ -334,7 +308,6 @@ int main(int argc, char* argv[])
         }
 
         StaticBuffer offsets_b(offsets, GL_ARRAY_BUFFER);
-        std::cout << offsets.size() << "\n";
 
         std::vector<std::array<float, 3>> face_positions{
             {{0, 0, 0}, {1, 0, 0}, {0, 0, 1}, {1, 0, 1}}

@@ -13,8 +13,10 @@ Image::Image(std::string const& path)
     if (!data) {
         std::cerr << path << " failed to load\n";
     } else {
+        /*
         std::cout << path << " " << size[0] << "x" << size[1] << " "
                   << number_of_channels << "\n";
+        */
     }
 }
 
@@ -87,5 +89,4 @@ Image::Image(std::vector<Image const*> const& to_stitch, size_t cols_per_row)
             }
         }
     }
-    std::cout << "\n";
 }
