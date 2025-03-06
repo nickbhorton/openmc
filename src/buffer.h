@@ -30,6 +30,7 @@ public:
     void bind();
     GLsizei byte_count();
     GLenum get_bind_target();
+    GLuint get_name();
 };
 
 // default constructor
@@ -99,3 +100,5 @@ template <typename T> StaticBuffer<T>::~StaticBuffer()
         glDeleteBuffers(1, &name);
     }
 }
+
+template <typename T> GLuint StaticBuffer<T>::get_name() { return name; }
