@@ -16,7 +16,6 @@
 
 #include "block.h"
 #include "chunk.h"
-#include "face.h"
 #include "image.h"
 #include "texture.h"
 #include "vao.h"
@@ -24,7 +23,6 @@
 #include <array>
 #include <cstdio>
 #include <iostream>
-#include <limits>
 #include <memory>
 
 typedef glm::vec4 vec4;
@@ -380,10 +378,10 @@ int main(int argc, char* argv[])
                 0.1f,
                 1000.0f
             );
-            basic_s.update_uniform_mat4f("view", view);
-            basic_s.update_uniform_mat4f("proj", proj);
-            axis_s.update_uniform_mat4f("view", view);
-            axis_s.update_uniform_mat4f("proj", proj);
+            basic_s.update_uniform("view", view);
+            basic_s.update_uniform("proj", proj);
+            axis_s.update_uniform("view", view);
+            axis_s.update_uniform("proj", proj);
 
             // clear screen white
             vec4 constexpr bg_color{1, 1, 1, 1};
@@ -393,7 +391,7 @@ int main(int argc, char* argv[])
             // draw
             for (size_t c = 0; c < chunk_count.x * chunk_count.y; c++) {
                 chunk_vaos[c].bind();
-                basic_s.update_uniform_vec2f("chunk_offset", chunk_position[c]);
+                basic_s.update_uniform("chunk_offset", chunk_position[c]);
                 glDrawArraysInstanced(
                     GL_TRIANGLE_STRIP,
                     0,

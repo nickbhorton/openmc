@@ -20,21 +20,50 @@ void report_program_info_log(GLuint name, std::string const& msg)
 
 ShaderProgram::ShaderProgram(std::vector<std::pair<std::string, GLenum>> shaders
 )
+    : moved{false}
 {
-    moved = false;
     name = glCreateProgram();
     if (!name) {
-        std::cerr << "glCreateProgram had an error" << std::endl;
+        std::cerr << "glCreateProgram could not create shader" << std::endl;
         std::exit(1);
     }
     for (auto const& [filename, shader_type] : shaders) {
-        ShaderObject so(filename, shader_type);
-        sos.push_back(std::move(so));
+        ShaderObject shader_object(filename, shader_type);
+        sos.push_back(std::move(shader_object));
     }
     for (auto const& so : sos) {
         this->attatch(so);
     }
     this->link();
+}
+
+ShaderProgram::~ShaderProgram()
+{
+    if (!moved) {
+        glDeleteProgram(name);
+    }
+}
+
+ShaderProgram::ShaderProgram(ShaderProgram&& other) noexcept
+    : moved{false}, name{other.name}
+{
+    other.moved = true;
+    for (size_t i = 0; i < other.sos.size(); i++) {
+        sos.push_back(std::move(other.sos[i]));
+    }
+    other.sos.clear();
+}
+
+ShaderProgram& ShaderProgram::operator=(ShaderProgram&& other) noexcept
+{
+    this->moved = false;
+    this->name = other.name;
+    other.moved = true;
+    for (size_t i = 0; i < other.sos.size(); i++) {
+        this->sos.push_back(std::move(other.sos[i]));
+    }
+    other.sos.clear();
+    return *this;
 }
 
 void ShaderProgram::attatch(ShaderObject const& shader)
@@ -57,26 +86,10 @@ void ShaderProgram::bind() { glUseProgram(name); }
 
 auto ShaderProgram::get_name() const -> GLuint { return name; }
 
-ShaderProgram::~ShaderProgram()
-{
-    if (!moved) {
-        glDeleteProgram(name);
-    }
-}
-ShaderProgram::ShaderProgram(ShaderProgram&& other) noexcept
-{
-    moved = false;
-    other.moved = true;
-    name = other.name;
-    for (size_t i = 0; i < other.sos.size(); i++) {
-        sos.push_back(std::move(other.sos[i]));
-    }
-    other.sos.clear();
-}
-
-void ShaderProgram::update_uniform_1f(
+template <>
+void ShaderProgram::update_uniform(
     std::string const& uniform_name,
-    GLfloat new_val
+    float new_val
 )
 {
     this->bind();
@@ -84,17 +97,16 @@ void ShaderProgram::update_uniform_1f(
     glUniform1f(location, new_val);
 }
 
-void ShaderProgram::update_uniform_1i(
-    std::string const& uniform_name,
-    GLint new_val
-)
+template <>
+void ShaderProgram::update_uniform(std::string const& uniform_name, int new_val)
 {
     this->bind();
     GLint location = glGetUniformLocation(name, uniform_name.c_str());
     glUniform1i(location, new_val);
 }
 
-void ShaderProgram::update_uniform_mat4f(
+template <>
+void ShaderProgram::update_uniform(
     std::string const& uniform_name,
     glm::mat4 const& new_val
 )
@@ -103,7 +115,9 @@ void ShaderProgram::update_uniform_mat4f(
     GLint location = glGetUniformLocation(name, uniform_name.c_str());
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(new_val));
 }
-void ShaderProgram::update_uniform_vec2f(
+
+template <>
+void ShaderProgram::update_uniform(
     std::string const& uniform_name,
     glm::vec2 const& new_val
 )
@@ -113,7 +127,8 @@ void ShaderProgram::update_uniform_vec2f(
     glUniform2fv(location, 1, glm::value_ptr(new_val));
 }
 
-void ShaderProgram::update_uniform_vec3f(
+template <>
+void ShaderProgram::update_uniform(
     std::string const& uniform_name,
     glm::vec3 const& new_val
 )
@@ -123,7 +138,8 @@ void ShaderProgram::update_uniform_vec3f(
     glUniform3fv(location, 1, glm::value_ptr(new_val));
 }
 
-void ShaderProgram::update_uniform_vec4f(
+template <>
+void ShaderProgram::update_uniform(
     std::string const& uniform_name,
     glm::vec4 const& new_val
 )

@@ -3,7 +3,7 @@
 #include <fstream>
 #include <iostream>
 
-void report_shader_info_log(GLuint name, std::string const& msg)
+static void report_shader_info_log(GLuint name, std::string const& msg)
 {
     GLsizei info_log_length{};
     glGetShaderiv(name, GL_INFO_LOG_LENGTH, &info_log_length);
@@ -22,12 +22,14 @@ ShaderObject::ShaderObject(
     std::string const& shader_filename,
     GLenum shader_type
 )
-    : moved(false)
+    : name{0}, moved(false)
 {
     name = glCreateShader(shader_type);
     if (!name) {
+        std::cerr << "shader could not be created\n";
         std::exit(1);
     }
+
     std::fstream file{};
     file.open(shader_filename);
     if (file.bad() || file.fail() || !file.good()) {
@@ -61,7 +63,19 @@ ShaderObject::ShaderObject(
     }
 }
 
-auto ShaderObject::get_name() const -> GLuint { return name; }
+ShaderObject::ShaderObject(ShaderObject&& other) noexcept
+    : name(other.name), moved(false)
+{
+    other.moved = true;
+}
+
+ShaderObject& ShaderObject::operator=(ShaderObject&& other) noexcept
+{
+    this->name = other.name;
+    this->moved = false;
+    other.moved = true;
+    return *this;
+}
 
 ShaderObject::~ShaderObject()
 {
@@ -70,8 +84,4 @@ ShaderObject::~ShaderObject()
     }
 }
 
-ShaderObject::ShaderObject(ShaderObject&& other) noexcept
-    : name(other.name), moved(false)
-{
-    other.moved = true;
-}
+GLuint ShaderObject::get_name() const { return name; }
