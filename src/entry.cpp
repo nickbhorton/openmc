@@ -247,7 +247,7 @@ int main(int argc, char* argv[])
         Texture texture_atlas{stiched, 0};
 
         std::vector<std::unique_ptr<Chunk>> chunks{};
-        ivec2 chunk_count = ivec2(32, 32);
+        ivec2 chunk_count = ivec2(2, 2);
         for (size_t cy = 0; cy < chunk_count.y; cy++) {
             for (size_t cx = 0; cx < chunk_count.x; cx++) {
                 std::unique_ptr<Chunk> test_chunk = std::make_unique<Chunk>();
@@ -291,7 +291,6 @@ int main(int argc, char* argv[])
 
         std::vector<VertexArrayObject> chunk_vaos{};
         std::vector<size_t> chunk_face_counts{};
-        std::vector<StaticBuffer> face_info_buffers{};
         std::vector<vec2> chunk_position{};
         for (size_t cy = 0; cy < chunk_count.y; cy++) {
             for (size_t cx = 0; cx < chunk_count.x; cx++) {
@@ -307,10 +306,9 @@ int main(int argc, char* argv[])
                     "v_position",
                     face_position_geometry_b
                 );
-                vao.attach_buffer_object("v_offset", faces_b, 1);
+                vao.attach_buffer_object("v_offset", std::move(faces_b), 1);
                 chunk_vaos.push_back(std::move(vao));
                 chunk_face_counts.push_back(faces.size());
-                face_info_buffers.push_back(std::move(faces_b));
                 chunk_position.push_back(
                     {static_cast<float>(cx) * g_chunk_size,
                      static_cast<float>(cy) * g_chunk_size}

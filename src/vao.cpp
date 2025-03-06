@@ -9,6 +9,9 @@ VertexArrayObject::VertexArrayObject(VertexArrayObject&& other) noexcept
     : name(other.name), shader_name(other.shader_name), moved(false)
 {
     other.moved = true;
+    for (size_t i = 0; i < other.owned_buffers.size(); i++) {
+        this->owned_buffers.push_back(std::move(other.owned_buffers[i]));
+    }
 }
 
 VertexArrayObject& VertexArrayObject::operator=(VertexArrayObject&& other
@@ -18,6 +21,9 @@ VertexArrayObject& VertexArrayObject::operator=(VertexArrayObject&& other
     shader_name = other.shader_name;
     moved = false;
     other.moved = true;
+    for (size_t i = 0; i < other.owned_buffers.size(); i++) {
+        this->owned_buffers.push_back(std::move(other.owned_buffers[i]));
+    }
     return *this;
 }
 
@@ -112,6 +118,25 @@ void VertexArrayObject::attach_buffer_object(
         shader_name,
         name,
         divisor,
-        buffer.get_type() == GL_UNSIGNED_INT
+        buffer.get_type() == GL_UNSIGNED_INT || buffer.get_type() == GL_INT
     );
+}
+void VertexArrayObject::attach_buffer_object(
+    std::string const& attribute_name,
+    StaticBuffer&& buffer,
+    GLuint divisor
+)
+{
+    attach_buffer_object_impl(
+        attribute_name,
+        buffer.get_attrib_size(),
+        buffer.get_type(),
+        buffer.get_bind_target(),
+        buffer.get_name(),
+        shader_name,
+        name,
+        divisor,
+        buffer.get_type() == GL_UNSIGNED_INT || buffer.get_type() == GL_INT
+    );
+    owned_buffers.push_back(std::move(buffer));
 }

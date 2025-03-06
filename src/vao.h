@@ -27,9 +27,16 @@ public:
         StaticBuffer& buffer,
         GLuint divisor = 0
     );
+    void attach_buffer_object(
+        std::string const& attribute_name,
+        StaticBuffer&& buffer,
+        GLuint divisor = 0
+    );
 
 private:
     GLuint name;
     GLuint shader_name;
     bool moved;
+
+    std::vector<StaticBuffer> owned_buffers;
 };
