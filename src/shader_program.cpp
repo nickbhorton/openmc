@@ -108,7 +108,7 @@ void ShaderProgram::update_uniform(std::string const& uniform_name, int new_val)
 template <>
 void ShaderProgram::update_uniform(
     std::string const& uniform_name,
-    glm::mat4 const& new_val
+    glm::mat4 new_val
 )
 {
     this->bind();
@@ -119,7 +119,7 @@ void ShaderProgram::update_uniform(
 template <>
 void ShaderProgram::update_uniform(
     std::string const& uniform_name,
-    glm::vec2 const& new_val
+    glm::vec2 new_val
 )
 {
     this->bind();
@@ -130,7 +130,7 @@ void ShaderProgram::update_uniform(
 template <>
 void ShaderProgram::update_uniform(
     std::string const& uniform_name,
-    glm::vec3 const& new_val
+    glm::vec3 new_val
 )
 {
     this->bind();
@@ -141,7 +141,7 @@ void ShaderProgram::update_uniform(
 template <>
 void ShaderProgram::update_uniform(
     std::string const& uniform_name,
-    glm::vec4 const& new_val
+    glm::vec4 new_val
 )
 {
     this->bind();

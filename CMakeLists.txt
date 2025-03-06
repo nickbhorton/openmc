@@ -21,10 +21,8 @@ target_include_directories(
 )
 
 add_executable(openmc src/entry.cpp 
-    src/buffer.h
-    src/shader.h
-    src/shader_object.cpp 
-    src/shader_program.cpp 
+    src/buffer.cpp src/buffer.h
+    src/shader.h src/shader_object.cpp src/shader_program.cpp 
     src/vao.cpp src/vao.h
     src/texture.cpp src/texture.h
     src/geometry.cpp src/geometry.h

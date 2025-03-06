@@ -291,7 +291,7 @@ int main(int argc, char* argv[])
 
         std::vector<VertexArrayObject> chunk_vaos{};
         std::vector<size_t> chunk_face_counts{};
-        std::vector<StaticBuffer<uint32_t>> face_info_buffers{};
+        std::vector<StaticBuffer> face_info_buffers{};
         std::vector<vec2> chunk_position{};
         for (size_t cy = 0; cy < chunk_count.y; cy++) {
             for (size_t cx = 0; cx < chunk_count.x; cx++) {

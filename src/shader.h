@@ -2,6 +2,8 @@
 
 #include <glad/gl.h>
 
+#include <glm/ext/matrix_float4x4.hpp>
+#include <glm/ext/vector_float4.hpp>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -55,8 +57,39 @@ private:
     void link();
 };
 
+template <>
+void ShaderProgram::update_uniform(
+    std::string const& uniform_name,
+    float new_val
+);
+template <>
+void ShaderProgram::update_uniform(
+    std::string const& uniform_name,
+    int new_val
+);
+template <>
+void ShaderProgram::update_uniform(
+    std::string const& uniform_name,
+    glm::mat4 new_val
+);
+template <>
+void ShaderProgram::update_uniform(
+    std::string const& uniform_name,
+    glm::vec2 new_val
+);
+template <>
+void ShaderProgram::update_uniform(
+    std::string const& uniform_name,
+    glm::vec3 new_val
+);
+template <>
+void ShaderProgram::update_uniform(
+    std::string const& uniform_name,
+    glm::vec4 new_val
+);
 template <typename T>
 void ShaderProgram::update_uniform(std::string const& uniform_name, T new_value)
 {
-    std::cerr << "ShaderProgram uniform type not implemented\n";
+    std::cerr << "ShaderProgram uniform type for " << uniform_name
+              << " not implemented\n";
 }

@@ -97,60 +97,21 @@ static void attach_buffer_object_impl(
     }
 }
 
-template <>
 void VertexArrayObject::attach_buffer_object(
     std::string const& attribute_name,
-    StaticBuffer<std::array<float, 3>>& buffer,
+    StaticBuffer& buffer,
     GLuint divisor
 )
 {
     attach_buffer_object_impl(
         attribute_name,
-        3,
-        GL_FLOAT,
-        buffer.get_bind_target(),
-        buffer.get_name(),
-        shader_name,
-        name,
-        divisor
-    );
-}
-
-template <>
-void VertexArrayObject::attach_buffer_object(
-    std::string const& attribute_name,
-    StaticBuffer<std::array<float, 2>>& buffer,
-    GLuint divisor
-)
-{
-    attach_buffer_object_impl(
-        attribute_name,
-        2,
-        GL_FLOAT,
-        buffer.get_bind_target(),
-        buffer.get_name(),
-        shader_name,
-        name,
-        divisor
-    );
-}
-
-template <>
-void VertexArrayObject::attach_buffer_object(
-    std::string const& attribute_name,
-    StaticBuffer<uint32_t>& buffer,
-    GLuint divisor
-)
-{
-    attach_buffer_object_impl(
-        attribute_name,
-        1,
-        GL_UNSIGNED_INT,
+        buffer.get_attrib_size(),
+        buffer.get_type(),
         buffer.get_bind_target(),
         buffer.get_name(),
         shader_name,
         name,
         divisor,
-        true
+        buffer.get_type() == GL_UNSIGNED_INT
     );
 }
