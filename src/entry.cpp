@@ -211,16 +211,17 @@ int main(int argc, char* argv[])
 
     {
         ShaderProgram basic_s(
-            {{"./res/shaders/basic.vert.glsl", GL_VERTEX_SHADER},
-             {"./res/shaders/basic.frag.glsl", GL_FRAGMENT_SHADER}}
+            {{"../res/shaders/basic.vert.glsl", GL_VERTEX_SHADER},
+             {"../res/shaders/basic.frag.glsl", GL_FRAGMENT_SHADER}}
         );
 
         ShaderProgram axis_s(
-            {{"./res/shaders/axis.vert.glsl", GL_VERTEX_SHADER},
-             {"./res/shaders/axis.frag.glsl", GL_FRAGMENT_SHADER}}
+            {{"../res/shaders/axis.vert.glsl", GL_VERTEX_SHADER},
+             {"../res/shaders/axis.frag.glsl", GL_FRAGMENT_SHADER}}
         );
 
-        std::string block_texture_dir = "./res/images/";
+        std::string block_texture_dir =
+            "/home/nick-dev/res/minecraft/textures/block/";
 
         std::vector<std::string> block_texture_filenames{
             "stone.png",
