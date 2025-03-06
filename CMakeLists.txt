@@ -25,7 +25,6 @@ add_executable(openmc src/entry.cpp
     src/shader.h src/shader_object.cpp src/shader_program.cpp 
     src/vao.cpp src/vao.h
     src/texture.cpp src/texture.h
-    src/geometry.cpp src/geometry.h
     src/chunk.cpp src/chunk.h
     src/image.cpp src/image.h
     src/face.cpp src/face.h
