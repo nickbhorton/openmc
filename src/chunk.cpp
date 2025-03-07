@@ -2,6 +2,8 @@
 
 #include "block.h"
 
+Chunk::Chunk() : block_mask{} {}
+
 static uint32_t calculate_index(uint32_t x, uint32_t y, uint32_t z)
 {
     return x + (y * g_chunk_size * g_chunk_size) + (z * g_chunk_size);
@@ -136,5 +138,3 @@ std::vector<uint32_t> Chunk::mesh()
     }
     return faces;
 }
-
-Chunk::Chunk() : block_mask{} {}

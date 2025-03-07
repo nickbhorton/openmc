@@ -29,6 +29,7 @@ add_executable(openmc src/entry.cpp
     src/image.cpp src/image.h
     src/face.cpp src/face.h
     src/block.cpp src/block.h
+    src/world.cpp src/world.h
 )
 target_link_libraries(openmc PRIVATE glad glfw imgui)
 target_compile_options(openmc PRIVATE -g -O -Wextra -Wall)

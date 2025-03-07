@@ -18,6 +18,7 @@
 #include "image.h"
 #include "texture.h"
 #include "vao.h"
+#include "world.h"
 
 #include <array>
 #include <cstdio>
@@ -252,6 +253,17 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         Image stiched{images_to_stitch, 3};
 
         Texture texture_atlas{stiched, 0};
+
+        World world{};
+        world.test_block({0, 0, 0});
+        world.test_block({1, 0, 0});
+        world.test_block({16, 0, 0});
+        world.test_block({32, 0, 0});
+        world.test_block({-1, 0, 0});
+        world.test_block({-13, 0, 0});
+        world.test_block({-20, 0, 0});
+        world.test_block({-32, 0, 0});
+        world.test_block({-33, 0, 0});
 
         std::vector<std::unique_ptr<Chunk>> chunks{};
         uvec2 chunk_count = ivec2(2, 2);
