@@ -6,7 +6,7 @@
 #include <string.h>
 
 Image::Image(std::string const& path)
-    : data{nullptr}, size{}, number_of_channels{}, is_stb{true}
+    : size{}, number_of_channels{}, is_stb{true}, data{nullptr}
 {
     stbi_set_flip_vertically_on_load(true);
     data = stbi_load(path.c_str(), &size[0], &size[1], &number_of_channels, 0);
@@ -50,7 +50,7 @@ Image::get_pixel(unsigned int x, unsigned int y) const
 }
 
 Image::Image(std::vector<Image const*> const& to_stitch, size_t cols_per_row)
-    : data{nullptr}, size{}, number_of_channels{}, is_stb{false}
+    : size{}, number_of_channels{}, is_stb{false}, data{nullptr}
 {
     if (to_stitch.size() == 0) {
         return;
@@ -72,8 +72,10 @@ Image::Image(std::vector<Image const*> const& to_stitch, size_t cols_per_row)
 
     for (size_t i = 0; i < to_stitch.size() / cols_per_row; i++) {
         for (size_t j = 0; j < cols_per_row; j++) {
-            for (size_t y = 0; y < first_img_size[1]; y++) {
-                for (size_t x = 0; x < first_img_size[0]; x++) {
+            for (size_t y = 0; y < static_cast<size_t>(first_img_size[1]);
+                 y++) {
+                for (size_t x = 0; x < static_cast<size_t>(first_img_size[0]);
+                     x++) {
                     size_t image_idx =
                         i * (to_stitch.size() / cols_per_row) + j;
                     if (image_idx < to_stitch.size()) {

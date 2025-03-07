@@ -1,4 +1,3 @@
-
 #include <glad/gl.h>
 
 #include <GLFW/glfw3.h>
@@ -59,9 +58,9 @@ static void glfw_error_callback(int error, const char* desc)
 static void glfw_key_callback(
     GLFWwindow* window,
     int key,
-    int scancode,
+    [[maybe_unused]] int scancode,
     int action,
-    int mods
+    [[maybe_unused]] int mods
 )
 {
     if (key == GLFW_KEY_Q && action == GLFW_PRESS) {
@@ -79,7 +78,11 @@ static void glfw_key_callback(
     }
 }
 
-void glfw_window_resize_callback(GLFWwindow* window, int width, int height)
+void glfw_window_resize_callback(
+    [[maybe_unused]] GLFWwindow* window,
+    int width,
+    int height
+)
 {
     // std::cout << "window resized to " << width << "x" << height << std::endl;
     g_window_size.x = width;
@@ -87,7 +90,7 @@ void glfw_window_resize_callback(GLFWwindow* window, int width, int height)
     glViewport(0, 0, width, height);
 }
 
-GLFWwindow* create_glfw_window(vec2 window_size)
+GLFWwindow* create_glfw_window(ivec2 window_size)
 {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
@@ -114,26 +117,30 @@ GLFWwindow* create_glfw_window(vec2 window_size)
     return window;
 }
 
-void glfw_mouse_callback(GLFWwindow* window, double xpos, double ypos)
+void glfw_mouse_callback(
+    [[maybe_unused]] GLFWwindow* window,
+    double xpos,
+    double ypos
+)
 {
     if (first_mouse_update) {
-        g_last[0] = xpos;
-        g_last[1] = ypos;
+        g_last[0] = static_cast<int>(xpos);
+        g_last[1] = static_cast<int>(ypos);
         first_mouse_update = false;
     }
 
     if (mouse_capture) {
-        float xoffset = xpos - g_last[0];
+        double xoffset = xpos - static_cast<double>(g_last[0]);
         // reversed since y-coordinates range from bottom to top
-        float yoffset = g_last[1] - ypos;
-        g_last[0] = xpos;
-        g_last[1] = ypos;
+        double yoffset = static_cast<double>(g_last[1]) - ypos;
+        g_last[0] = static_cast<int>(xpos);
+        g_last[1] = static_cast<int>(ypos);
 
-        const float sensitivity = 0.1f;
+        const double sensitivity = 0.1;
         xoffset *= sensitivity;
         yoffset *= sensitivity;
-        g_yaw += xoffset;
-        g_pitch += yoffset;
+        g_yaw += static_cast<float>(xoffset);
+        g_pitch += static_cast<float>(yoffset);
         if (g_pitch > 89.0f) {
             g_pitch = 89.0f;
         }
@@ -171,7 +178,7 @@ void frame_input(GLFWwindow* window)
     }
 }
 
-int main(int argc, char* argv[])
+int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
 {
     glfwInit();
     glfwSetErrorCallback(glfw_error_callback);
@@ -247,12 +254,12 @@ int main(int argc, char* argv[])
         Texture texture_atlas{stiched, 0};
 
         std::vector<std::unique_ptr<Chunk>> chunks{};
-        ivec2 chunk_count = ivec2(2, 2);
-        for (size_t cy = 0; cy < chunk_count.y; cy++) {
-            for (size_t cx = 0; cx < chunk_count.x; cx++) {
+        uvec2 chunk_count = ivec2(2, 2);
+        for (uint32_t cy = 0; cy < chunk_count.y; cy++) {
+            for (uint32_t cx = 0; cx < chunk_count.x; cx++) {
                 std::unique_ptr<Chunk> test_chunk = std::make_unique<Chunk>();
-                for (size_t i = 0; i < g_chunk_size; i++) {
-                    for (size_t j = 0; j < g_chunk_size; j++) {
+                for (uint32_t i = 0; i < g_chunk_size; i++) {
+                    for (uint32_t j = 0; j < g_chunk_size; j++) {
                         float noise = glm::perlin(vec2(
                             static_cast<float>(cx) +
                                 static_cast<float>(i) / g_chunk_size,
@@ -292,13 +299,13 @@ int main(int argc, char* argv[])
         std::vector<VertexArrayObject> chunk_vaos{};
         std::vector<size_t> chunk_face_counts{};
         std::vector<vec2> chunk_position{};
-        for (size_t cy = 0; cy < chunk_count.y; cy++) {
-            for (size_t cx = 0; cx < chunk_count.x; cx++) {
+        for (uint32_t cy = 0; cy < chunk_count.y; cy++) {
+            for (uint32_t cx = 0; cx < chunk_count.x; cx++) {
                 VertexArrayObject vao{};
 
-                std::vector<uint32_t> faces{
+                std::vector<uint32_t> faces(
                     chunks[cy * chunk_count.y + cx]->mesh()
-                };
+                );
                 StaticBuffer faces_b(faces, GL_ARRAY_BUFFER);
 
                 vao.attach_shader(basic_s);
@@ -361,10 +368,10 @@ int main(int argc, char* argv[])
             }
 
             camera_direction.x =
-                cos(glm::radians(g_yaw)) * cos(glm::radians(g_pitch));
+                std::cos(glm::radians(g_yaw)) * std::cos(glm::radians(g_pitch));
             camera_direction.y = sin(glm::radians(g_pitch));
             camera_direction.z =
-                sin(glm::radians(g_yaw)) * cos(glm::radians(g_pitch));
+                std::sin(glm::radians(g_yaw)) * std::cos(glm::radians(g_pitch));
             mat4 view = glm::lookAt(
                 g_camera_position,
                 g_camera_position + glm::normalize(camera_direction),
@@ -372,7 +379,8 @@ int main(int argc, char* argv[])
             );
             mat4 proj = glm::perspective(
                 glm::radians(45.0f),
-                static_cast<float>(g_window_size[0]) / g_window_size[1],
+                static_cast<float>(g_window_size[0]) /
+                    static_cast<float>(g_window_size[1]),
                 0.1f,
                 1000.0f
             );
@@ -393,13 +401,17 @@ int main(int argc, char* argv[])
                 glDrawArraysInstanced(
                     GL_TRIANGLE_STRIP,
                     0,
-                    face_position_geometry.size(),
+                    static_cast<GLsizei>(face_position_geometry.size()),
                     chunk_face_counts[c]
                 );
             }
 
             axis_vao.bind();
-            glDrawArrays(GL_LINES, 0, axis_positions.size());
+            glDrawArrays(
+                GL_LINES,
+                0,
+                static_cast<GLsizei>(axis_positions.size())
+            );
 
             // draw the imgui window
             ImGui_ImplOpenGL3_NewFrame();

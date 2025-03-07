@@ -50,8 +50,9 @@ public:
 
 private:
     GLuint name;
-    std::vector<ShaderObject> sos;
     bool moved;
+
+    std::vector<ShaderObject> sos;
 
     void attatch(ShaderObject const& shader);
     void link();

@@ -1,8 +1,6 @@
 #include "chunk.h"
 
 #include "block.h"
-#include <iostream>
-#include <ostream>
 
 static uint32_t calculate_index(uint32_t x, uint32_t y, uint32_t z)
 {
@@ -27,7 +25,7 @@ uint32_t Chunk::test_block_mask(int32_t x, int32_t y, int32_t z)
 void Chunk::set_block(uint32_t x, uint32_t y, uint32_t z, uint32_t block)
 {
     uint32_t const index = calculate_index(x, y, z);
-    block_mask[index] = block;
+    block_mask[index] = static_cast<unsigned char>(block);
 }
 
 void Chunk::unset_block(uint32_t x, uint32_t y, uint32_t z)

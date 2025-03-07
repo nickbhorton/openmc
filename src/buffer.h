@@ -21,11 +21,11 @@ public:
     ~StaticBuffer();
 
     void bind();
-    GLsizei byte_count();
-    GLenum get_bind_target();
-    GLuint get_name();
-    GLenum get_type();
-    GLint get_attrib_size();
+    size_t byte_count() const;
+    GLenum get_bind_target() const;
+    GLuint get_name() const;
+    GLenum get_type() const;
+    GLint get_attrib_size() const;
 
 private:
     GLuint name;

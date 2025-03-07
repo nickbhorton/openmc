@@ -3,7 +3,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 
-void report_program_info_log(GLuint name, std::string const& msg)
+static void report_program_info_log(GLuint name, std::string const& msg)
 {
     GLsizei info_log_length{};
     glGetProgramiv(name, GL_INFO_LOG_LENGTH, &info_log_length);
@@ -20,7 +20,7 @@ void report_program_info_log(GLuint name, std::string const& msg)
 
 ShaderProgram::ShaderProgram(std::vector<std::pair<std::string, GLenum>> shaders
 )
-    : moved{false}
+    : name{}, moved{false}, sos{}
 {
     name = glCreateProgram();
     if (!name) {
@@ -37,15 +37,8 @@ ShaderProgram::ShaderProgram(std::vector<std::pair<std::string, GLenum>> shaders
     this->link();
 }
 
-ShaderProgram::~ShaderProgram()
-{
-    if (!moved) {
-        glDeleteProgram(name);
-    }
-}
-
 ShaderProgram::ShaderProgram(ShaderProgram&& other) noexcept
-    : moved{false}, name{other.name}
+    : name{other.name}, moved{false}, sos{}
 {
     other.moved = true;
     for (size_t i = 0; i < other.sos.size(); i++) {
@@ -64,6 +57,13 @@ ShaderProgram& ShaderProgram::operator=(ShaderProgram&& other) noexcept
     }
     other.sos.clear();
     return *this;
+}
+
+ShaderProgram::~ShaderProgram()
+{
+    if (!moved) {
+        glDeleteProgram(name);
+    }
 }
 
 void ShaderProgram::attatch(ShaderObject const& shader)

@@ -7,6 +7,7 @@
 #include <stb/stb_image.h>
 
 Texture::Texture(std::string const& path, int active_texture)
+    : name{}, size{}, number_of_channels{}
 {
 
     glGenTextures(1, &name);
@@ -37,9 +38,9 @@ Texture::Texture(std::string const& path, int active_texture)
     } else if (number_of_channels == 1) {
         channels = GL_RED;
     } else {
-
         std::cerr << "texture has unsupported number of channels "
                   << number_of_channels << "\n";
+        return;
     }
     glTexImage2D(
         GL_TEXTURE_2D,
@@ -58,6 +59,7 @@ Texture::Texture(std::string const& path, int active_texture)
 }
 
 Texture::Texture(Image const& img, int active_texture)
+    : name{}, size{}, number_of_channels{}
 {
     glGenTextures(1, &name);
     glActiveTexture(active_texture);
@@ -80,6 +82,7 @@ Texture::Texture(Image const& img, int active_texture)
     } else {
         std::cerr << "texture has unsupported number of channels "
                   << number_of_channels << "\n";
+        return;
     }
     glTexImage2D(
         GL_TEXTURE_2D,

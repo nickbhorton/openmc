@@ -3,8 +3,9 @@
 #include <array>
 
 StaticBuffer::StaticBuffer(StaticBuffer&& other) noexcept
-    : moved(false), bind_target(other.bind_target), data_size(other.data_size),
-      name(other.name)
+    : name(other.name), bind_target(other.bind_target),
+      data_type(other.data_type), attrib_size(other.attrib_size),
+      data_size(other.data_size), moved(false)
 {
     other.moved = true;
 }
@@ -19,16 +20,6 @@ StaticBuffer& StaticBuffer::operator=(StaticBuffer&& other) noexcept
     return *this;
 }
 
-void StaticBuffer::bind() { glBindBuffer(bind_target, name); }
-
-GLenum StaticBuffer::get_bind_target() { return bind_target; }
-
-GLsizei StaticBuffer::byte_count() { return data_size; }
-
-GLenum StaticBuffer::get_type() { return data_type; }
-
-GLint StaticBuffer::get_attrib_size() { return attrib_size; }
-
 StaticBuffer::~StaticBuffer()
 {
     if (!moved) {
@@ -36,7 +27,17 @@ StaticBuffer::~StaticBuffer()
     }
 }
 
-GLuint StaticBuffer::get_name() { return name; }
+void StaticBuffer::bind() { glBindBuffer(bind_target, name); }
+
+GLenum StaticBuffer::get_bind_target() const { return bind_target; }
+
+size_t StaticBuffer::byte_count() const { return data_size; }
+
+GLenum StaticBuffer::get_type() const { return data_type; }
+
+GLint StaticBuffer::get_attrib_size() const { return attrib_size; }
+
+GLuint StaticBuffer::get_name() const { return name; }
 
 // specialized data
 template <>
@@ -44,9 +45,8 @@ StaticBuffer::StaticBuffer(
     std::vector<std::array<float, 3>> buffer_data,
     GLenum bind_target
 )
-    : moved(false), bind_target(bind_target),
-      data_size(sizeof(std::array<float, 3>) * buffer_data.size()),
-      data_type{GL_FLOAT}, attrib_size{3}
+    : name{}, bind_target(bind_target), data_type(GL_FLOAT), attrib_size(3),
+      data_size(sizeof(std::array<float, 3>) * buffer_data.size()), moved(false)
 {
     glCreateBuffers(1, &name);
     glNamedBufferStorage(name, this->data_size, buffer_data.data(), 0);
@@ -57,9 +57,9 @@ StaticBuffer::StaticBuffer(
     std::vector<uint32_t> buffer_data,
     GLenum bind_target
 )
-    : moved(false), bind_target(bind_target),
-      data_size(sizeof(uint32_t) * buffer_data.size()),
-      data_type{GL_UNSIGNED_INT}, attrib_size{1}
+    : name{}, bind_target(bind_target), data_type(GL_UNSIGNED_INT),
+      attrib_size(1), data_size(sizeof(uint32_t) * buffer_data.size()),
+      moved(false)
 {
     glCreateBuffers(1, &name);
     glNamedBufferStorage(name, this->data_size, buffer_data.data(), 0);
