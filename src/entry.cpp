@@ -255,47 +255,13 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         Texture texture_atlas{stiched, 0};
 
         World world{};
-        world.test_block({0, 0, 0});
-        world.test_block({1, 0, 0});
-        world.test_block({16, 0, 0});
-        world.test_block({32, 0, 0});
-        world.test_block({-1, 0, 0});
-        world.test_block({-13, 0, 0});
-        world.test_block({-20, 0, 0});
-        world.test_block({-32, 0, 0});
-        world.test_block({-33, 0, 0});
 
-        std::vector<std::unique_ptr<Chunk>> chunks{};
-        uvec2 chunk_count = ivec2(2, 2);
+        uvec2 chunk_count = ivec2(16, 16);
         for (uint32_t cy = 0; cy < chunk_count.y; cy++) {
             for (uint32_t cx = 0; cx < chunk_count.x; cx++) {
-                std::unique_ptr<Chunk> test_chunk = std::make_unique<Chunk>();
-                for (uint32_t i = 0; i < g_chunk_size; i++) {
-                    for (uint32_t j = 0; j < g_chunk_size; j++) {
-                        float noise = glm::perlin(vec2(
-                            static_cast<float>(cx) +
-                                static_cast<float>(i) / g_chunk_size,
-                            static_cast<float>(cy) +
-                                static_cast<float>(j) / g_chunk_size
-                        ));
-                        uint32_t uint_noise =
-                            3 + static_cast<uint32_t>(std::abs(27.0 * noise));
-                        uint32_t constexpr dirt_width = 3;
-                        for (uint32_t k = 0; k < uint_noise - dirt_width; k++) {
-                            test_chunk->set_block(i, k, j, block::stone);
-                        }
-                        for (uint32_t k = 0; k < dirt_width; k++) {
-                            test_chunk->set_block(
-                                i,
-                                (uint_noise - dirt_width) + k,
-                                j,
-                                block::sand
-                            );
-                        }
-                        test_chunk->set_block(i, uint_noise, j, block::sand);
-                    }
-                }
-                chunks.push_back(std::move(test_chunk));
+                world.generate_chunk(
+                    {static_cast<int>(cx), 0, static_cast<int>(cy)}
+                );
             }
         }
 
@@ -315,9 +281,10 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
             for (uint32_t cx = 0; cx < chunk_count.x; cx++) {
                 VertexArrayObject vao{};
 
-                std::vector<uint32_t> faces(
-                    chunks[cy * chunk_count.y + cx]->mesh()
-                );
+                std::vector<uint32_t> faces(world.get_chunk_mesh(
+                    {static_cast<int>(cx), 0, static_cast<int>(cy)}
+                ));
+                std::cout << faces.size() << "\n";
                 StaticBuffer faces_b(faces, GL_ARRAY_BUFFER);
 
                 vao.attach_shader(basic_s);

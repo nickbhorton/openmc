@@ -15,30 +15,38 @@ size_t Array3Hash::operator()(std::array<int32_t, 3> const& array3) const
 
 World::World() : chunks{} {}
 
-void World::test_block(std::array<int64_t, 3> at)
+uint32_t World::test_block(std::array<int64_t, 3> at)
 {
     static auto calculate_chunk_key = [](int64_t at_n) -> int32_t {
         return at_n < 0 ? (at_n + 1) / g_chunk_size - 1 : at_n / g_chunk_size;
     };
-    std::array<int32_t, 3> chunk_key{
+    std::array<int32_t, 3> const chunk_key{
         calculate_chunk_key(at[0]),
         calculate_chunk_key(at[1]),
         calculate_chunk_key(at[2])
     };
+    // std::cout << chunk_key[0] << " " << chunk_key[2] << "\n";
+
+    // if chunk does not exist say block exists
+    if (chunks.find(chunk_key) == chunks.end()) {
+        return 0;
+    }
+
     static auto calculate_block_key = [](int64_t at_n) -> int32_t {
-        return at_n < 0 ? (32 - (-at_n % 33)) : at_n % g_chunk_size;
+        if (at_n < 0) {
+            if (-at_n % g_chunk_size == 0) {
+                return -at_n % g_chunk_size;
+            }
+            return 32 - (-at_n % g_chunk_size);
+        }
+        return at_n % g_chunk_size;
     };
-    std::array<int32_t, 3> block_key{
+    std::array<int32_t, 3> const block_key{
         calculate_block_key(at[0]),
         calculate_block_key(at[1]),
         calculate_block_key(at[2])
     };
-
-    std::cout << "at: " << at[0] << " " << at[1] << " " << at[2] << "\t";
-    std::cout << "chunk_at: " << chunk_key[0] << " " << chunk_key[1] << " "
-              << chunk_key[2] << "\t";
-    std::cout << "block_at: " << block_key[0] << " " << block_key[1] << " "
-              << block_key[2] << "\n";
+    return chunks[chunk_key].test_block_mask(block_key);
 }
 
 void World::generate_chunk(std::array<int32_t, 3> at)
@@ -71,4 +79,122 @@ void World::generate_chunk(std::array<int32_t, 3> at)
     }
 
     chunks.emplace(std::make_pair(at, std::move(chunk)));
+}
+
+static Block const stone(
+    {{{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}}},
+    {TextureRotation::CW180,
+     TextureRotation::None,
+     TextureRotation::None,
+     TextureRotation::CW270,
+     TextureRotation::CW180,
+     TextureRotation::CW90}
+);
+
+static Block const sand(
+    {{{0, 1}, {0, 1}, {0, 1}, {0, 1}, {0, 1}, {0, 1}}},
+    {TextureRotation::CW180,
+     TextureRotation::None,
+     TextureRotation::None,
+     TextureRotation::CW270,
+     TextureRotation::CW180,
+     TextureRotation::CW90}
+);
+
+static Block const grass(
+    {{{2, 0}, {2, 0}, {1, 0}, {1, 0}, {1, 0}, {1, 0}}},
+    {TextureRotation::CW180,
+     TextureRotation::None,
+     TextureRotation::None,
+     TextureRotation::CW270,
+     TextureRotation::CW180,
+     TextureRotation::CW90}
+);
+
+static Block const dirt(
+    {{{1, 1}, {1, 1}, {1, 1}, {1, 1}, {1, 1}, {1, 1}}},
+    {TextureRotation::CW180,
+     TextureRotation::None,
+     TextureRotation::None,
+     TextureRotation::CW270,
+     TextureRotation::CW180,
+     TextureRotation::CW90}
+);
+
+static Block const* blocks[4];
+static bool blocks_init = false;
+
+std::vector<uint32_t> World::get_chunk_mesh(std::array<int32_t, 3> at)
+{
+    if (!blocks_init) {
+        blocks[block::stone - 1] = &stone;
+        blocks[block::sand - 1] = &sand;
+        blocks[block::grass - 1] = &grass;
+        blocks[block::dirt - 1] = &dirt;
+        blocks_init = true;
+    }
+
+    std::vector<uint32_t> faces;
+    for (int64_t xi = 0; xi < g_chunk_size; xi++) {
+        for (int64_t zi = 0; zi < g_chunk_size; zi++) {
+            for (int64_t yi = 0; yi < g_chunk_size; yi++) {
+                int64_t x = at[0] * g_chunk_size + xi;
+                int64_t y = at[1] * g_chunk_size + yi;
+                int64_t z = at[2] * g_chunk_size + zi;
+
+                uint32_t block_index = test_block({x, y, z});
+                if (block_index) {
+                    if (!test_block({x, y - 1, z})) {
+                        faces.push_back(blocks[block_index - 1]->get_face(
+                            {static_cast<unsigned int>(xi),
+                             static_cast<unsigned int>(yi),
+                             static_cast<unsigned int>(zi)},
+                            Direction::Down
+                        ));
+                    }
+                    if (!test_block({x, y + 1, z})) {
+                        faces.push_back(blocks[block_index - 1]->get_face(
+                            {static_cast<unsigned int>(xi),
+                             static_cast<unsigned int>(yi),
+                             static_cast<unsigned int>(zi)},
+                            Direction::Up
+                        ));
+                    }
+                    if (!test_block({x, y, z + 1})) {
+                        faces.push_back(blocks[block_index - 1]->get_face(
+                            {static_cast<unsigned int>(xi),
+                             static_cast<unsigned int>(yi),
+                             static_cast<unsigned int>(zi)},
+                            Direction::North
+                        ));
+                    }
+                    if (!test_block({x - 1, y, z})) {
+                        faces.push_back(blocks[block_index - 1]->get_face(
+                            {static_cast<unsigned int>(xi),
+                             static_cast<unsigned int>(yi),
+                             static_cast<unsigned int>(zi)},
+                            Direction::East
+                        ));
+                    }
+                    if (!test_block({x, y, z - 1})) {
+                        faces.push_back(blocks[block_index - 1]->get_face(
+                            {static_cast<unsigned int>(xi),
+                             static_cast<unsigned int>(yi),
+                             static_cast<unsigned int>(zi)},
+                            Direction::South
+                        ));
+                    }
+                    if (!test_block({x + 1, y, z})) {
+                        faces.push_back(blocks[block_index - 1]->get_face(
+                            {static_cast<unsigned int>(xi),
+                             static_cast<unsigned int>(yi),
+                             static_cast<unsigned int>(zi)},
+                            Direction::West
+                        ));
+                    }
+                }
+            }
+        }
+    }
+    return faces;
 }

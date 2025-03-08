@@ -15,10 +15,10 @@ public:
     Chunk();
     void set_block(uint32_t x, uint32_t y, uint32_t z, uint32_t block);
     void unset_block(uint32_t x, uint32_t y, uint32_t z);
+    uint32_t test_block_mask(int32_t x, int32_t y, int32_t z);
+    uint32_t test_block_mask(std::array<int32_t, 3> at);
     std::vector<uint32_t> mesh();
 
 private:
-    uint32_t test_block_mask(int32_t x, int32_t y, int32_t z);
-
     std::array<uint8_t, blocks_in_chunk> block_mask;
 };
