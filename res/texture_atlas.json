@@ -1,1 +1,10 @@
-["stone.png"]
+[
+	"stone.png",
+	"dirt.png",
+	"sand.png",
+	"gravel.png",
+	"bedrock.png",
+    "cobblestone.png",
+	"oak_log.png",
+	"oak_log_top.png"
+]

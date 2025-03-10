@@ -48,6 +48,14 @@ uint32_t World::test_block(std::array<int64_t, 3> at)
     return chunks[chunk_key].test_block_mask(block_key);
 }
 
+static uint32_t rand_block_index()
+{
+    int min = 1;
+    int max = 6;
+    uint32_t random = min + rand() % (max - min + 1);
+    return random;
+}
+
 void World::generate_chunk(std::array<int32_t, 3> at)
 {
     Chunk chunk{};
@@ -61,20 +69,25 @@ void World::generate_chunk(std::array<int32_t, 3> at)
             uint32_t uint_noise =
                 3 + static_cast<uint32_t>(std::abs(27.0 * noise));
 
-            uint32_t constexpr dirt_width = 3;
-            for (uint32_t k = 0; k < uint_noise - dirt_width; k++) {
-                chunk.set_block(i, k, j, block::stone);
+            for (uint32_t k = 0; k <= uint_noise; k++) {
+                chunk.set_block(i, k, j, rand_block_index());
             }
-            for (uint32_t k = 0; k < dirt_width; k++) {
-                chunk.set_block(
-                    i,
-                    (uint_noise - dirt_width) + k,
-                    j,
-                    block::stone
-                );
-            }
-            chunk.set_block(i, uint_noise, j, block::stone);
         }
+    }
+
+    chunks.emplace(std::make_pair(at, std::move(chunk)));
+}
+
+void World::generate_debug_chunk(std::array<int32_t, 3> at)
+{
+    Chunk chunk{};
+    for (uint32_t i = 0; i < g_blocks.size(); i++) {
+        chunk.set_block(
+            1 + (i * 2) / (g_chunk_size - 2),
+            0,
+            1 + (i * 2) % (g_chunk_size - 2),
+            i + 1
+        );
     }
 
     chunks.emplace(std::make_pair(at, std::move(chunk)));

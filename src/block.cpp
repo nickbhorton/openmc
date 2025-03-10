@@ -30,8 +30,8 @@ uint32_t Block::get_face(std::array<uint32_t, 3> position, Direction d) const
 {
     return generate_face_info(
         position,
-        {face_textures[d] / g_texture_square_width,
-         face_textures[d] % g_texture_square_width},
+        {face_textures[d] % g_texture_square_width,
+         face_textures[d] / g_texture_square_width},
         d,
         face_orientations[d]
     );

@@ -230,6 +230,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
              {"../res/shaders/axis.frag.glsl", GL_FRAGMENT_SHADER}}
         );
 
+        // loading the texture atlas
         std::string block_texture_dir =
             "/home/nick-dev/res/minecraft/textures/block/";
 
@@ -268,7 +269,11 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         ivec2 chunk_count = ivec2(1, 1);
         for (int cy = -chunk_count.x; cy < chunk_count.y; cy++) {
             for (int cx = -chunk_count.x; cx < chunk_count.x; cx++) {
-                world.generate_chunk({cx, 0, cy});
+                if (cx == 0 && cy == 0) {
+                    world.generate_debug_chunk({cx, 0, cy});
+                } else {
+                    world.generate_chunk({cx, 0, cy});
+                }
             }
         }
 
