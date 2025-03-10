@@ -2,7 +2,6 @@
 
 #include <glm/ext/vector_float2.hpp>
 #include <glm/gtc/noise.hpp>
-#include <iostream>
 
 #include "block.h"
 #include "chunk.h"
@@ -71,69 +70,18 @@ void World::generate_chunk(std::array<int32_t, 3> at)
                     i,
                     (uint_noise - dirt_width) + k,
                     j,
-                    block::sand
+                    block::stone
                 );
             }
-            chunk.set_block(i, uint_noise, j, block::sand);
+            chunk.set_block(i, uint_noise, j, block::stone);
         }
     }
 
     chunks.emplace(std::make_pair(at, std::move(chunk)));
 }
 
-static Block const stone(
-    {{{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}}},
-    {TextureRotation::CW180,
-     TextureRotation::None,
-     TextureRotation::None,
-     TextureRotation::CW270,
-     TextureRotation::CW180,
-     TextureRotation::CW90}
-);
-
-static Block const sand(
-    {{{0, 1}, {0, 1}, {0, 1}, {0, 1}, {0, 1}, {0, 1}}},
-    {TextureRotation::CW180,
-     TextureRotation::None,
-     TextureRotation::None,
-     TextureRotation::CW270,
-     TextureRotation::CW180,
-     TextureRotation::CW90}
-);
-
-static Block const grass(
-    {{{2, 0}, {2, 0}, {1, 0}, {1, 0}, {1, 0}, {1, 0}}},
-    {TextureRotation::CW180,
-     TextureRotation::None,
-     TextureRotation::None,
-     TextureRotation::CW270,
-     TextureRotation::CW180,
-     TextureRotation::CW90}
-);
-
-static Block const dirt(
-    {{{1, 1}, {1, 1}, {1, 1}, {1, 1}, {1, 1}, {1, 1}}},
-    {TextureRotation::CW180,
-     TextureRotation::None,
-     TextureRotation::None,
-     TextureRotation::CW270,
-     TextureRotation::CW180,
-     TextureRotation::CW90}
-);
-
-static Block const* blocks[4];
-static bool blocks_init = false;
-
 std::vector<uint32_t> World::get_chunk_mesh(std::array<int32_t, 3> at)
 {
-    if (!blocks_init) {
-        blocks[block::stone - 1] = &stone;
-        blocks[block::sand - 1] = &sand;
-        blocks[block::grass - 1] = &grass;
-        blocks[block::dirt - 1] = &dirt;
-        blocks_init = true;
-    }
-
     std::vector<uint32_t> faces;
     for (int64_t xi = 0; xi < g_chunk_size; xi++) {
         for (int64_t zi = 0; zi < g_chunk_size; zi++) {
@@ -145,7 +93,7 @@ std::vector<uint32_t> World::get_chunk_mesh(std::array<int32_t, 3> at)
                 uint32_t block_index = test_block({x, y, z});
                 if (block_index) {
                     if (!test_block({x, y - 1, z})) {
-                        faces.push_back(blocks[block_index - 1]->get_face(
+                        faces.push_back(g_blocks[block_index - 1].get_face(
                             {static_cast<unsigned int>(xi),
                              static_cast<unsigned int>(yi),
                              static_cast<unsigned int>(zi)},
@@ -153,7 +101,7 @@ std::vector<uint32_t> World::get_chunk_mesh(std::array<int32_t, 3> at)
                         ));
                     }
                     if (!test_block({x, y + 1, z})) {
-                        faces.push_back(blocks[block_index - 1]->get_face(
+                        faces.push_back(g_blocks[block_index - 1].get_face(
                             {static_cast<unsigned int>(xi),
                              static_cast<unsigned int>(yi),
                              static_cast<unsigned int>(zi)},
@@ -161,7 +109,7 @@ std::vector<uint32_t> World::get_chunk_mesh(std::array<int32_t, 3> at)
                         ));
                     }
                     if (!test_block({x, y, z + 1})) {
-                        faces.push_back(blocks[block_index - 1]->get_face(
+                        faces.push_back(g_blocks[block_index - 1].get_face(
                             {static_cast<unsigned int>(xi),
                              static_cast<unsigned int>(yi),
                              static_cast<unsigned int>(zi)},
@@ -169,7 +117,7 @@ std::vector<uint32_t> World::get_chunk_mesh(std::array<int32_t, 3> at)
                         ));
                     }
                     if (!test_block({x - 1, y, z})) {
-                        faces.push_back(blocks[block_index - 1]->get_face(
+                        faces.push_back(g_blocks[block_index - 1].get_face(
                             {static_cast<unsigned int>(xi),
                              static_cast<unsigned int>(yi),
                              static_cast<unsigned int>(zi)},
@@ -177,7 +125,7 @@ std::vector<uint32_t> World::get_chunk_mesh(std::array<int32_t, 3> at)
                         ));
                     }
                     if (!test_block({x, y, z - 1})) {
-                        faces.push_back(blocks[block_index - 1]->get_face(
+                        faces.push_back(g_blocks[block_index - 1].get_face(
                             {static_cast<unsigned int>(xi),
                              static_cast<unsigned int>(yi),
                              static_cast<unsigned int>(zi)},
@@ -185,7 +133,7 @@ std::vector<uint32_t> World::get_chunk_mesh(std::array<int32_t, 3> at)
                         ));
                     }
                     if (!test_block({x + 1, y, z})) {
-                        faces.push_back(blocks[block_index - 1]->get_face(
+                        faces.push_back(g_blocks[block_index - 1].get_face(
                             {static_cast<unsigned int>(xi),
                              static_cast<unsigned int>(yi),
                              static_cast<unsigned int>(zi)},

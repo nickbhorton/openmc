@@ -49,39 +49,38 @@ Image::get_pixel(unsigned int x, unsigned int y) const
     }
 }
 
-Image::Image(std::vector<Image const*> const& to_stitch, size_t cols_per_row)
+Image::Image(std::vector<Image const*> const& to_stitch, size_t square_discr)
     : size{}, number_of_channels{}, is_stb{false}, data{nullptr}
 {
     if (to_stitch.size() == 0) {
         return;
     }
-    std::array<int, 2> first_img_size = to_stitch[0]->size;
+    std::array<int, 2> sub_img_size = to_stitch[0]->size;
+    // making sure all sub images are the same size;
     for (auto const& img : to_stitch) {
-        if (img->size != first_img_size) {
+        if (img->size != sub_img_size) {
             std::cerr << "different sized images found in a stiched image\n";
             return;
         }
     }
 
-    size[0] = (to_stitch.size() / cols_per_row) * first_img_size[0];
-    size[1] = cols_per_row * first_img_size[1];
+    size[0] = square_discr * sub_img_size[0];
+    size[1] = square_discr * sub_img_size[1];
     number_of_channels = 3;
 
     data = static_cast<unsigned char*>(malloc(3 * size[0] * size[1]));
     memset(data, 0, 3 * size[0] * size[1]);
 
-    for (size_t i = 0; i < to_stitch.size() / cols_per_row; i++) {
-        for (size_t j = 0; j < cols_per_row; j++) {
-            for (size_t y = 0; y < static_cast<size_t>(first_img_size[1]);
-                 y++) {
-                for (size_t x = 0; x < static_cast<size_t>(first_img_size[0]);
+    for (size_t i = 0; i < square_discr; i++) {
+        for (size_t j = 0; j < square_discr; j++) {
+            for (size_t y = 0; y < static_cast<size_t>(sub_img_size[1]); y++) {
+                for (size_t x = 0; x < static_cast<size_t>(sub_img_size[0]);
                      x++) {
-                    size_t image_idx =
-                        i * (to_stitch.size() / cols_per_row) + j;
+                    size_t image_idx = i * square_discr + j;
                     if (image_idx < to_stitch.size()) {
                         auto pix = to_stitch[image_idx]->get_pixel(x, y);
-                        size_t row = (i * first_img_size[0]) + y;
-                        size_t col = (j * first_img_size[1]) + x;
+                        size_t row = (i * sub_img_size[0]) + y;
+                        size_t col = (j * sub_img_size[1]) + x;
                         size_t idx = ((row * size[1] + col)) * 3;
                         data[idx + 0] = pix[0];
                         data[idx + 1] = pix[1];

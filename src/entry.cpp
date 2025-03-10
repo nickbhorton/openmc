@@ -9,6 +9,8 @@
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
+#include <nlohmann/json.hpp>
+
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
@@ -22,8 +24,10 @@
 
 #include <array>
 #include <cstdio>
+#include <fstream>
 #include <iostream>
 #include <memory>
+#include <nlohmann/json_fwd.hpp>
 
 typedef glm::vec4 vec4;
 typedef glm::vec3 vec3;
@@ -229,17 +233,14 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         std::string block_texture_dir =
             "/home/nick-dev/res/minecraft/textures/block/";
 
-        std::vector<std::string> block_texture_filenames{
-            "stone.png",
-            "grass_block_side.png",
-            "grass_block_top.png",
-            "sand.png",
-            "dirt.png",
-            "clay.png",
-            "cobblestone.png",
-            "gravel.png",
-            "tuff.png"
-        };
+        std::vector<std::string> block_texture_filenames{};
+        std::ifstream file("../res/texture_atlas.json");
+        nlohmann::json filename_data = nlohmann::json::parse(file);
+        for (auto const& v : filename_data) {
+            block_texture_filenames.push_back(v.template get<std::string>());
+        }
+        std::cout << block_texture_filenames.size() << "\n";
+
         std::vector<std::unique_ptr<Image>> images;
         for (auto const& path : block_texture_filenames) {
             images.push_back(std::make_unique<Image>(block_texture_dir + path));
@@ -250,41 +251,36 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
             images_to_stitch.push_back(img.get());
         }
 
-        Image stiched{images_to_stitch, 3};
+        Image stiched{images_to_stitch, g_texture_square_width};
 
         Texture texture_atlas{stiched, 0};
-
-        World world{};
-
-        uvec2 chunk_count = ivec2(16, 16);
-        for (uint32_t cy = 0; cy < chunk_count.y; cy++) {
-            for (uint32_t cx = 0; cx < chunk_count.x; cx++) {
-                world.generate_chunk(
-                    {static_cast<int>(cx), 0, static_cast<int>(cy)}
-                );
-            }
-        }
 
         std::vector<std::array<float, 3>> face_position_geometry{
             {{0, 0, 0}, {1, 0, 0}, {0, 0, 1}, {1, 0, 1}}
         };
-
         StaticBuffer face_position_geometry_b(
             face_position_geometry,
             GL_ARRAY_BUFFER
         );
 
+        World world{};
+
+        ivec2 chunk_count = ivec2(1, 1);
+        for (int cy = -chunk_count.x; cy < chunk_count.y; cy++) {
+            for (int cx = -chunk_count.x; cx < chunk_count.x; cx++) {
+                world.generate_chunk({cx, 0, cy});
+            }
+        }
+
         std::vector<VertexArrayObject> chunk_vaos{};
         std::vector<size_t> chunk_face_counts{};
         std::vector<vec2> chunk_position{};
-        for (uint32_t cy = 0; cy < chunk_count.y; cy++) {
-            for (uint32_t cx = 0; cx < chunk_count.x; cx++) {
+        size_t vao_count{0};
+        for (int cy = -chunk_count.x; cy < chunk_count.y; cy++) {
+            for (int cx = -chunk_count.x; cx < chunk_count.x; cx++) {
                 VertexArrayObject vao{};
 
-                std::vector<uint32_t> faces(world.get_chunk_mesh(
-                    {static_cast<int>(cx), 0, static_cast<int>(cy)}
-                ));
-                std::cout << faces.size() << "\n";
+                auto faces(world.get_chunk_mesh({cx, 0, cy}));
                 StaticBuffer faces_b(faces, GL_ARRAY_BUFFER);
 
                 vao.attach_shader(basic_s);
@@ -299,6 +295,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
                     {static_cast<float>(cx) * g_chunk_size,
                      static_cast<float>(cy) * g_chunk_size}
                 );
+                vao_count++;
             }
         }
 
@@ -325,6 +322,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         axis_vao.attach_shader(axis_s);
         axis_vao.attach_buffer_object("v_position", axis_positions_b);
         axis_vao.attach_buffer_object("v_color", axis_colors_b);
+
+        std::cout << vao_count << "\n";
 
         // imgui vars
         bool imgui_wireframe{false};
@@ -374,7 +373,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
             glClearBufferfv(GL_COLOR, 0, glm::value_ptr(bg_color));
 
             // draw
-            for (size_t c = 0; c < chunk_count.x * chunk_count.y; c++) {
+            for (size_t c = 0; c < vao_count; c++) {
                 chunk_vaos[c].bind();
                 basic_s.update_uniform("chunk_offset", chunk_position[c]);
                 glDrawArraysInstanced(
