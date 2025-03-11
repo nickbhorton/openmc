@@ -38,9 +38,28 @@ uint32_t constexpr sand = 3;
 uint32_t constexpr gravel = 4;
 uint32_t constexpr bedrock = 5;
 uint32_t constexpr cobblestone = 6;
-uint32_t constexpr oak_log_UD = 6;
-uint32_t constexpr oak_log_NS = 6;
-uint32_t constexpr oak_log_EW = 6;
+uint32_t constexpr oak_log_UD = 7;
+uint32_t constexpr oak_log_NS = 8;
+uint32_t constexpr oak_log_EW = 9;
+uint32_t constexpr iron_block = 10;
+uint32_t constexpr gold_block = 11;
+uint32_t constexpr diamond_block = 12;
+uint32_t constexpr black_wool = 13;
+uint32_t constexpr blue_wool = 14;
+uint32_t constexpr brown_wool = 15;
+uint32_t constexpr cyan_wool = 16;
+uint32_t constexpr gray_wool = 17;
+uint32_t constexpr green_wool = 18;
+uint32_t constexpr light_blue_wool = 19;
+uint32_t constexpr light_gray_wool = 20;
+uint32_t constexpr lime_wool = 21;
+uint32_t constexpr magenta_wool = 22;
+uint32_t constexpr orange_wool = 23;
+uint32_t constexpr pink_wool = 24;
+uint32_t constexpr purple_wool = 25;
+uint32_t constexpr red_wool = 26;
+uint32_t constexpr white_wool = 27;
+uint32_t constexpr yellow_wool = 28;
 } // namespace block
 
 // texture roatation types
@@ -90,4 +109,23 @@ std::vector<Block> const g_blocks{
     Block(block::oak_log_UD, {7, 7, 6, 6, 6, 6}, trt::log_UD),
     Block(block::oak_log_NS, {6, 6, 7, 6, 7, 6}, trt::log_NS),
     Block(block::oak_log_EW, {6, 6, 6, 7, 6, 7}, trt::log_EW),
+    Block(block::iron_block, 8, trt::homogeneous),
+    Block(block::gold_block, 9, trt::homogeneous),
+    Block(block::diamond_block, 10, trt::homogeneous),
+    Block(block::black_wool, 11, trt::homogeneous),
+    Block(block::blue_wool, 12, trt::homogeneous),
+    Block(block::brown_wool, 13, trt::homogeneous),
+    Block(block::cyan_wool, 14, trt::homogeneous),
+    Block(block::gray_wool, 15, trt::homogeneous),
+    Block(block::green_wool, 16, trt::homogeneous),
+    Block(block::light_blue_wool, 17, trt::homogeneous),
+    Block(block::light_gray_wool, 18, trt::homogeneous),
+    Block(block::lime_wool, 19, trt::homogeneous),
+    Block(block::magenta_wool, 20, trt::homogeneous),
+    Block(block::orange_wool, 21, trt::homogeneous),
+    Block(block::pink_wool, 22, trt::homogeneous),
+    Block(block::purple_wool, 23, trt::homogeneous),
+    Block(block::red_wool, 24, trt::homogeneous),
+    Block(block::white_wool, 25, trt::homogeneous),
+    Block(block::yellow_wool, 26, trt::homogeneous),
 };

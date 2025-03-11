@@ -51,7 +51,7 @@ uint32_t World::test_block(std::array<int64_t, 3> at)
 static uint32_t rand_block_index()
 {
     int min = 1;
-    int max = 6;
+    int max = g_blocks.size();
     uint32_t random = min + rand() % (max - min + 1);
     return random;
 }
@@ -83,7 +83,7 @@ void World::generate_debug_chunk(std::array<int32_t, 3> at)
     Chunk chunk{};
     for (uint32_t i = 0; i < g_blocks.size(); i++) {
         chunk.set_block(
-            1 + (i * 2) / (g_chunk_size - 2),
+            (1 + (i * 2) / (g_chunk_size - 2)) * 2,
             0,
             1 + (i * 2) % (g_chunk_size - 2),
             i + 1

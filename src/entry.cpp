@@ -266,7 +266,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
 
         World world{};
 
-        ivec2 chunk_count = ivec2(1, 1);
+        ivec2 chunk_count = ivec2(2, 2);
         for (int cy = -chunk_count.x; cy < chunk_count.y; cy++) {
             for (int cx = -chunk_count.x; cx < chunk_count.x; cx++) {
                 if (cx == 0 && cy == 0) {
