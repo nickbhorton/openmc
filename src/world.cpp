@@ -71,7 +71,12 @@ void World::generate_chunk(std::array<int32_t, 3> at)
                         static_cast<float>(k) / g_chunk_size
                 ));
                 if (std::abs(noise) > 0.3) {
-                    chunk.set_block(i, j, k, rand_block_index());
+                    chunk.set_block(
+                        i,
+                        j,
+                        k,
+                        static_cast<uint32_t>(std::abs(noise) * g_blocks.size())
+                    );
                 }
             }
         }
