@@ -44,8 +44,11 @@ Image::get_pixel(unsigned int x, unsigned int y) const
         return {data[index], data[index + 1], data[index + 2]};
         break;
     default:
-        std::cerr << "pixel from image with strange number of channels\n";
-        return {0, 0, 0};
+        /*
+    std::cerr << "pixel from image with strange number of channels "
+              << number_of_channels << "\n";
+        */
+        return {data[index], data[index + 1], data[index + 2]};
     }
 }
 

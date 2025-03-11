@@ -63,6 +63,33 @@ uint32_t constexpr yellow_wool = 28;
 uint32_t constexpr andesite = 29;
 uint32_t constexpr diorite = 30;
 uint32_t constexpr granite = 31;
+uint32_t constexpr polished_andesite = 32;
+uint32_t constexpr polished_diorite = 33;
+uint32_t constexpr polished_granite = 34;
+uint32_t constexpr bricks = 35;
+uint32_t constexpr calcite = 36;
+uint32_t constexpr chiseled_stone_bricks = 37;
+uint32_t constexpr coarse_dirt = 38;
+uint32_t constexpr deepslate = 39;
+uint32_t constexpr cobbled_deepslate = 40;
+uint32_t constexpr cracked_stone_bricks = 41;
+uint32_t constexpr stone_bricks = 42;
+uint32_t constexpr sandstone = 43;
+uint32_t constexpr dark_prismarine = 44;
+uint32_t constexpr red_sand = 45;
+uint32_t constexpr red_sandstone = 46;
+uint32_t constexpr quartz_bricks = 47;
+uint32_t constexpr tuff = 48;
+uint32_t constexpr packed_mud = 49;
+uint32_t constexpr obsidian = 50;
+uint32_t constexpr nether_bricks = 51;
+uint32_t constexpr mud_bricks = 52;
+uint32_t constexpr mud = 53;
+uint32_t constexpr mossy_cobblestone = 54;
+uint32_t constexpr mossy_stone_bricks = 55;
+uint32_t constexpr moss_block = 56;
+uint32_t constexpr oak_planks = 57;
+uint32_t constexpr soul_san = 58;
 } // namespace block
 
 // texture roatation types
@@ -134,4 +161,31 @@ std::vector<Block> const g_blocks{
     Block(block::andesite, 27, trt::homogeneous),
     Block(block::diorite, 28, trt::homogeneous),
     Block(block::granite, 29, trt::homogeneous),
+    Block(block::polished_andesite, 30, trt::homogeneous),
+    Block(block::polished_diorite, 31, trt::homogeneous),
+    Block(block::polished_granite, 32, trt::homogeneous),
+    Block(block::bricks, 33, trt::homogeneous),
+    Block(block::calcite, 34, trt::homogeneous),
+    Block(block::chiseled_stone_bricks, 35, trt::homogeneous),
+    Block(block::coarse_dirt, 36, trt::homogeneous),
+    Block(block::deepslate, 37, trt::homogeneous),
+    Block(block::cobbled_deepslate, 38, trt::homogeneous),
+    Block(block::cracked_stone_bricks, 39, trt::homogeneous),
+    Block(block::stone_bricks, 40, trt::homogeneous),
+    Block(block::sandstone, 41, trt::homogeneous),
+    Block(block::dark_prismarine, 42, trt::homogeneous),
+    Block(block::red_sand, 43, trt::homogeneous),
+    Block(block::red_sandstone, 44, trt::homogeneous),
+    Block(block::quartz_bricks, 45, trt::homogeneous),
+    Block(block::tuff, 46, trt::homogeneous),
+    Block(block::packed_mud, 47, trt::homogeneous),
+    Block(block::obsidian, 48, trt::homogeneous),
+    Block(block::nether_bricks, 49, trt::homogeneous),
+    Block(block::mud_bricks, 50, trt::homogeneous),
+    Block(block::mud, 51, trt::homogeneous),
+    Block(block::mossy_cobblestone, 52, trt::homogeneous),
+    Block(block::mossy_stone_bricks, 53, trt::homogeneous),
+    Block(block::moss_block, 54, trt::homogeneous),
+    Block(block::oak_planks, 55, trt::homogeneous),
+    Block(block::soul_san, 56, trt::homogeneous),
 };
