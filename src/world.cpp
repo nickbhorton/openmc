@@ -61,16 +61,18 @@ void World::generate_chunk(std::array<int32_t, 3> at)
     Chunk chunk{};
     for (uint32_t i = 0; i < g_chunk_size; i++) {
         for (uint32_t j = 0; j < g_chunk_size; j++) {
-            float noise = glm::perlin(glm::vec2(
-                static_cast<float>(at[0]) +
-                    static_cast<float>(i) / g_chunk_size,
-                static_cast<float>(at[2]) + static_cast<float>(j) / g_chunk_size
-            ));
-            uint32_t uint_noise =
-                3 + static_cast<uint32_t>(std::abs(27.0 * noise));
-
-            for (uint32_t k = 0; k <= uint_noise; k++) {
-                chunk.set_block(i, k, j, rand_block_index());
+            for (uint32_t k = 0; k < g_chunk_size; k++) {
+                float noise = glm::perlin(glm::vec3(
+                    static_cast<float>(at[0]) +
+                        static_cast<float>(i) / g_chunk_size,
+                    static_cast<float>(at[1]) +
+                        static_cast<float>(j) / g_chunk_size,
+                    static_cast<float>(at[2]) +
+                        static_cast<float>(k) / g_chunk_size
+                ));
+                if (std::abs(noise) > 0.3) {
+                    chunk.set_block(i, j, k, rand_block_index());
+                }
             }
         }
     }

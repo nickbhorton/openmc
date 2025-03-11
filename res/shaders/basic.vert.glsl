@@ -10,7 +10,7 @@ out float dim;
 uniform mat4 view;
 uniform mat4 proj;
 
-uniform vec2 chunk_offset;
+uniform vec3 chunk_offset;
 
 void main() {
     uint x_off = v_offset & 31;
@@ -55,7 +55,7 @@ void main() {
         dim = 0.8;
     }
 
-    gl_Position = proj * view * (vec4(chunk_offset.x, 0.0, chunk_offset.y, 0.0) + base_pos + vec4(offset, 0.0));
+    gl_Position = proj * view * (vec4(chunk_offset, 0.0) + base_pos + vec4(offset, 0.0));
 
     vec2 uv_array[16];
     uint tex_rotation = (v_offset >> 18) & 3;

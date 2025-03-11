@@ -157,7 +157,7 @@ void glfw_mouse_callback(
 
 void frame_input(GLFWwindow* window)
 {
-    const float camera_speed = 0.25f;
+    const float camera_speed = 1.0f;
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         g_camera_position += camera_speed * glm::normalize(camera_direction);
@@ -240,7 +240,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         for (auto const& v : filename_data) {
             block_texture_filenames.push_back(v.template get<std::string>());
         }
-        std::cout << block_texture_filenames.size() << "\n";
 
         std::vector<std::unique_ptr<Image>> images;
         for (auto const& path : block_texture_filenames) {
@@ -266,43 +265,51 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
 
         World world{};
 
-        ivec2 chunk_count = ivec2(2, 2);
-        for (int cy = -chunk_count.x; cy < chunk_count.y; cy++) {
-            for (int cx = -chunk_count.x; cx < chunk_count.x; cx++) {
-                if (cx == 0 && cy == 0) {
-                    world.generate_debug_chunk({cx, 0, cy});
-                } else {
-                    world.generate_chunk({cx, 0, cy});
+        int chunk_radius = 4;
+        for (int cz = -chunk_radius; cz < chunk_radius; cz++) {
+            for (int cy = -chunk_radius; cy < chunk_radius; cy++) {
+                for (int cx = -chunk_radius; cx < chunk_radius; cx++) {
+                    if (cx == 0 && cy == 0 && cz == 0) {
+                        world.generate_debug_chunk({cx, cy, cz});
+                    } else {
+                        world.generate_chunk({cx, cy, cz});
+                    }
                 }
             }
         }
 
         std::vector<VertexArrayObject> chunk_vaos{};
         std::vector<size_t> chunk_face_counts{};
-        std::vector<vec2> chunk_position{};
+        std::vector<vec3> chunk_position{};
         size_t vao_count{0};
-        for (int cy = -chunk_count.x; cy < chunk_count.y; cy++) {
-            for (int cx = -chunk_count.x; cx < chunk_count.x; cx++) {
-                VertexArrayObject vao{};
+        size_t triangle_count{0};
+        for (int cz = -chunk_radius; cz < chunk_radius; cz++) {
+            for (int cy = -chunk_radius; cy < chunk_radius; cy++) {
+                for (int cx = -chunk_radius; cx < chunk_radius; cx++) {
+                    VertexArrayObject vao{};
 
-                auto faces(world.get_chunk_mesh({cx, 0, cy}));
-                StaticBuffer faces_b(faces, GL_ARRAY_BUFFER);
+                    auto faces(world.get_chunk_mesh({cx, cy, cz}));
+                    StaticBuffer faces_b(faces, GL_ARRAY_BUFFER);
 
-                vao.attach_shader(basic_s);
-                vao.attach_buffer_object(
-                    "v_position",
-                    face_position_geometry_b
-                );
-                vao.attach_buffer_object("v_offset", std::move(faces_b), 1);
-                chunk_vaos.push_back(std::move(vao));
-                chunk_face_counts.push_back(faces.size());
-                chunk_position.push_back(
-                    {static_cast<float>(cx) * g_chunk_size,
-                     static_cast<float>(cy) * g_chunk_size}
-                );
-                vao_count++;
+                    vao.attach_shader(basic_s);
+                    vao.attach_buffer_object(
+                        "v_position",
+                        face_position_geometry_b
+                    );
+                    vao.attach_buffer_object("v_offset", std::move(faces_b), 1);
+                    chunk_vaos.push_back(std::move(vao));
+                    chunk_face_counts.push_back(faces.size());
+                    chunk_position.push_back(
+                        {static_cast<float>(cx) * g_chunk_size,
+                         static_cast<float>(cy) * g_chunk_size,
+                         static_cast<float>(cz) * g_chunk_size}
+                    );
+                    triangle_count += faces.size();
+                    vao_count++;
+                }
             }
         }
+        std::cout << triangle_count << "\n";
 
         std::vector<std::array<float, 3>> axis_positions{{
             {0, 0, 0},
@@ -327,8 +334,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         axis_vao.attach_shader(axis_s);
         axis_vao.attach_buffer_object("v_position", axis_positions_b);
         axis_vao.attach_buffer_object("v_color", axis_colors_b);
-
-        std::cout << vao_count << "\n";
 
         // imgui vars
         bool imgui_wireframe{false};
