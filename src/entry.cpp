@@ -51,7 +51,7 @@ vec3 camera_direction = vec3(
     sin(glm::radians(g_pitch)),
     sin(glm::radians(g_yaw)) * cos(glm::radians(g_pitch))
 );
-bool mouse_capture{};
+bool mouse_capture{true};
 bool first_mouse_update{true};
 
 static void glfw_error_callback(int error, const char* desc)
@@ -72,6 +72,16 @@ static void glfw_key_callback(
         glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        if (!mouse_capture) {
+            mouse_capture = true;
+            first_mouse_update = true;
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        } else {
+            mouse_capture = false;
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+    }
+    if (key == GLFW_KEY_E && action == GLFW_PRESS) {
         if (!mouse_capture) {
             mouse_capture = true;
             first_mouse_update = true;
@@ -265,7 +275,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
 
         World world{};
 
-        int chunk_radius = 4;
+        int chunk_radius = 2;
         for (int cz = -chunk_radius; cz < chunk_radius; cz++) {
             for (int cy = -chunk_radius; cy < chunk_radius; cy++) {
                 for (int cx = -chunk_radius; cx < chunk_radius; cx++) {
@@ -309,7 +319,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
                 }
             }
         }
-        std::cout << triangle_count << "\n";
 
         std::vector<std::array<float, 3>> axis_positions{{
             {0, 0, 0},
@@ -402,26 +411,36 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
             );
 
             // draw the imgui window
-            ImGui_ImplOpenGL3_NewFrame();
-            ImGui_ImplGlfw_NewFrame();
-            ImGui::NewFrame();
+            if (!mouse_capture) {
+                float constexpr imgui_window_padding{10};
+                ImGui_ImplOpenGL3_NewFrame();
+                ImGui_ImplGlfw_NewFrame();
+                ImGui::NewFrame();
 
-            ImGui::Begin("openmc", &open_imgui, window_flags_imgui);
-            ImGui::SetWindowPos(ImVec2(0, 0));
-            ImGui::SetWindowSize(ImVec2(400, 200));
-            ImGui::DragFloat("Yaw", &g_yaw, g_yaw);
-            ImGui::DragFloat("Pitch", &g_pitch, g_pitch);
-            ImGui::InputFloat3(
-                "Camera Position",
-                glm::value_ptr(g_camera_position)
-            );
-            ImGui::Checkbox("Wireframe", &imgui_wireframe);
-            ImGui::Checkbox("Vsync", &imgui_vsync);
-            ImGui::Text("%.2f FPS", io.Framerate);
-            ImGui::End();
+                ImGui::Begin("openmc", &open_imgui, window_flags_imgui);
+                ImGui::SetWindowPos(
+                    ImVec2(imgui_window_padding, imgui_window_padding)
+                );
+                ImGui::SetWindowSize(ImVec2(
+                    g_window_size.x - 2 * imgui_window_padding,
+                    g_window_size.y - 2 * imgui_window_padding
+                ));
+                ImGui::DragFloat("Yaw", &g_yaw, g_yaw);
+                ImGui::DragFloat("Pitch", &g_pitch, g_pitch);
+                ImGui::InputFloat3(
+                    "Camera Position",
+                    glm::value_ptr(g_camera_position)
+                );
+                ImGui::Checkbox("Wireframe", &imgui_wireframe);
+                ImGui::Checkbox("Vsync", &imgui_vsync);
+                ImGui::Text("%zu triangles rendered", triangle_count);
+                ImGui::Text("%zu vao drawn", vao_count);
+                ImGui::Text("%.2f FPS", io.Framerate);
+                ImGui::End();
 
-            ImGui::Render();
-            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+                ImGui::Render();
+                ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+            }
 
             glfwSwapBuffers(window);
         }
