@@ -60,6 +60,9 @@ uint32_t constexpr purple_wool = 25;
 uint32_t constexpr red_wool = 26;
 uint32_t constexpr white_wool = 27;
 uint32_t constexpr yellow_wool = 28;
+uint32_t constexpr andesite = 29;
+uint32_t constexpr diorite = 30;
+uint32_t constexpr granite = 31;
 } // namespace block
 
 // texture roatation types
@@ -128,4 +131,7 @@ std::vector<Block> const g_blocks{
     Block(block::red_wool, 24, trt::homogeneous),
     Block(block::white_wool, 25, trt::homogeneous),
     Block(block::yellow_wool, 26, trt::homogeneous),
+    Block(block::andesite, 27, trt::homogeneous),
+    Block(block::diorite, 28, trt::homogeneous),
+    Block(block::granite, 29, trt::homogeneous),
 };
