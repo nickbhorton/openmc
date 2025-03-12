@@ -14,7 +14,8 @@ size_t Array3Hash::operator()(std::array<int32_t, 3> const& array3) const
 
 World::World() : chunks{} {}
 
-uint32_t World::test_block(std::array<int64_t, 3> at)
+std::optional<std::array<std::array<int64_t, 3>, 2>>
+World::get_chunk_and_block_key(std::array<int64_t, 3> at)
 {
     static auto calculate_chunk_key = [](int64_t at_n) -> int32_t {
         return at_n < 0 ? (at_n + 1) / g_chunk_size - 1 : at_n / g_chunk_size;
@@ -24,11 +25,10 @@ uint32_t World::test_block(std::array<int64_t, 3> at)
         calculate_chunk_key(at[1]),
         calculate_chunk_key(at[2])
     };
-    // std::cout << chunk_key[0] << " " << chunk_key[2] << "\n";
 
     // if chunk does not exist say block exists
     if (chunks.find(chunk_key) == chunks.end()) {
-        return 0;
+        return std::nullopt;
     }
 
     static auto calculate_block_key = [](int64_t at_n) -> int32_t {
@@ -40,12 +40,47 @@ uint32_t World::test_block(std::array<int64_t, 3> at)
         }
         return at_n % g_chunk_size;
     };
-    std::array<int32_t, 3> const block_key{
+    std::array<int64_t, 3> const block_key{
         calculate_block_key(at[0]),
         calculate_block_key(at[1]),
         calculate_block_key(at[2])
     };
-    return chunks[chunk_key].test_block_mask(block_key);
+    std::array<int64_t, 3> ll_chunk_key{
+        static_cast<int64_t>(chunk_key[0]),
+        static_cast<int64_t>(chunk_key[1]),
+        static_cast<int64_t>(chunk_key[2])
+    };
+    return {{ll_chunk_key, block_key}};
+}
+
+uint32_t World::test_block(std::array<int64_t, 3> at)
+{
+    auto const cb_opt = get_chunk_and_block_key(at);
+    if (!cb_opt.has_value()) {
+        return 0;
+    }
+    auto const [chunk_key, block_key] = get_chunk_and_block_key(at).value();
+    std::array<int32_t, 3> l_chunk_key{
+        static_cast<int32_t>(chunk_key[0]),
+        static_cast<int32_t>(chunk_key[1]),
+        static_cast<int32_t>(chunk_key[2])
+    };
+    return chunks[l_chunk_key].test_block_mask(block_key);
+}
+
+void World::remove_block(std::array<int64_t, 3> at)
+{
+    auto const cb_opt = get_chunk_and_block_key(at);
+    if (!cb_opt.has_value()) {
+        return;
+    }
+    auto const [chunk_key, block_key] = get_chunk_and_block_key(at).value();
+    std::array<int32_t, 3> l_chunk_key{
+        static_cast<int32_t>(chunk_key[0]),
+        static_cast<int32_t>(chunk_key[0]),
+        static_cast<int32_t>(chunk_key[0])
+    };
+    chunks[l_chunk_key].set_block(block_key[0], block_key[1], block_key[2], 0);
 }
 
 static uint32_t rand_block_index()
@@ -83,6 +118,7 @@ void World::generate_chunk(std::array<int32_t, 3> at)
     }
 
     chunks.emplace(std::make_pair(at, std::move(chunk)));
+    generate_mesh(at);
 }
 
 void World::generate_debug_chunk(std::array<int32_t, 3> at)
@@ -98,9 +134,10 @@ void World::generate_debug_chunk(std::array<int32_t, 3> at)
     }
 
     chunks.emplace(std::make_pair(at, std::move(chunk)));
+    generate_mesh(at);
 }
 
-std::vector<uint32_t> World::get_chunk_mesh(std::array<int32_t, 3> at)
+void World::generate_mesh(std::array<int32_t, 3> at)
 {
     std::vector<uint32_t> faces;
     for (int64_t xi = 0; xi < g_chunk_size; xi++) {
@@ -164,5 +201,13 @@ std::vector<uint32_t> World::get_chunk_mesh(std::array<int32_t, 3> at)
             }
         }
     }
-    return faces;
+    meshes.emplace(std::make_pair(at, std::move(faces)));
+}
+
+std::vector<uint32_t> const* World::get_chunk_mesh(std::array<int32_t, 3> at)
+{
+    if (meshes.count(at)) {
+        return &meshes[at];
+    }
+    return nullptr;
 }

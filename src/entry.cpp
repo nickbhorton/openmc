@@ -10,6 +10,7 @@
 #include <glm/vec4.hpp>
 
 #include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
@@ -18,6 +19,7 @@
 #include "block.h"
 #include "chunk.h"
 #include "image.h"
+#include "intersect.h"
 #include "texture.h"
 #include "vao.h"
 #include "world.h"
@@ -27,7 +29,6 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
-#include <nlohmann/json_fwd.hpp>
 
 typedef glm::vec4 vec4;
 typedef glm::vec3 vec3;
@@ -40,13 +41,15 @@ typedef glm::uvec2 uvec2;
 
 typedef glm::mat4 mat4;
 
+World g_world{};
+
 ivec2 g_window_size(200, 200);
 ivec2 g_last{g_window_size[0] / 2, g_window_size[1] / 2};
 float g_yaw{45.0};
 float g_pitch{11.5};
-vec3 g_camera_position = vec3(-3.0, -1.0, -3.0);
-vec3 camera_up = vec3(0.0, 1.0, 0.0);
-vec3 camera_direction = vec3(
+vec3 g_camera_position = vec3(-3.5, -1.5, -3.5);
+vec3 g_camera_up = vec3(0.0, 1.0, 0.0);
+vec3 g_camera_direction = vec3(
     cos(glm::radians(g_yaw)) * cos(glm::radians(g_pitch)),
     sin(glm::radians(g_pitch)),
     sin(glm::radians(g_yaw)) * cos(glm::radians(g_pitch))
@@ -164,37 +167,85 @@ void glfw_mouse_callback(
         }
     }
 }
+void glfw_mouse_button_callback(
+    [[maybe_unused]] GLFWwindow* window,
+    int button,
+    int action,
+    [[maybe_unused]] int mods
+)
+{
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+        auto const points{intersections(
+            {g_camera_position.x, g_camera_position.y, g_camera_position.z},
+            {g_camera_direction.x, g_camera_direction.y, g_camera_direction.z},
+            10
+        )};
+        for (auto const& p : points) {
+            std::array<int64_t, 3> const checked_block{
+                static_cast<int64_t>(std::floor(p[0])),
+                static_cast<int64_t>(std::floor(p[1])),
+                static_cast<int64_t>(std::floor(p[2]))
+            };
+            uint32_t const block_type = g_world.test_block(checked_block);
+            if (block_type > 0) {
+                std::cout << g_world.test_block(checked_block) << "\n";
+                std::cout << "removed block at ";
+                std::cout << checked_block[0] << " ";
+                std::cout << checked_block[1] << " ";
+                std::cout << checked_block[2] << "\n";
+                g_world.remove_block(checked_block);
+                std::cout << g_world.test_block(checked_block) << "\n";
+                break;
+            }
+        }
+        std::exit(0);
+    }
+}
 
 void frame_input(GLFWwindow* window)
 {
-    const float camera_speed = 1.0f;
+    const float camera_speed = 0.25f;
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        g_camera_position += camera_speed * glm::normalize(camera_direction);
+        g_camera_position += camera_speed * glm::normalize(g_camera_direction);
     }
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        g_camera_position -= camera_speed * glm::normalize(camera_direction);
+        g_camera_position -= camera_speed * glm::normalize(g_camera_direction);
     }
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
         g_camera_position -=
-            glm::normalize(glm::cross(camera_direction, camera_up)) *
+            glm::normalize(glm::cross(g_camera_direction, g_camera_up)) *
             camera_speed;
     }
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
         g_camera_position +=
-            glm::normalize(glm::cross(camera_direction, camera_up)) *
+            glm::normalize(glm::cross(g_camera_direction, g_camera_up)) *
             camera_speed;
     }
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-        g_camera_position += camera_up * camera_speed;
+        g_camera_position += g_camera_up * camera_speed;
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-        g_camera_position -= camera_up * camera_speed;
+        g_camera_position -= g_camera_up * camera_speed;
     }
 }
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
 {
+    int constexpr chunk_radius = 2;
+    for (int cz = -chunk_radius; cz < chunk_radius; cz++) {
+        for (int cy = -chunk_radius; cy < chunk_radius; cy++) {
+            for (int cx = -chunk_radius; cx < chunk_radius; cx++) {
+                if (cx == 0 && cy == 0 && cz == 0) {
+                    g_world.generate_debug_chunk({cx, cy, cz});
+                } else {
+                    g_world.generate_chunk({cx, cy, cz});
+                }
+            }
+        }
+        std::cout << "chunk z layer " << cz << " generation complete\n";
+    }
+
     glfwInit();
     glfwSetErrorCallback(glfw_error_callback);
 
@@ -202,6 +253,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
     glfwSetKeyCallback(window, glfw_key_callback);
     glfwSetFramebufferSizeCallback(window, glfw_window_resize_callback);
     glfwSetCursorPosCallback(window, glfw_mouse_callback);
+    glfwSetCursorPosCallback(window, glfw_mouse_callback);
+    glfwSetMouseButtonCallback(window, glfw_mouse_button_callback);
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -273,21 +326,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
             GL_ARRAY_BUFFER
         );
 
-        World world{};
-
-        int chunk_radius = 2;
-        for (int cz = -chunk_radius; cz < chunk_radius; cz++) {
-            for (int cy = -chunk_radius; cy < chunk_radius; cy++) {
-                for (int cx = -chunk_radius; cx < chunk_radius; cx++) {
-                    if (cx == 0 && cy == 0 && cz == 0) {
-                        world.generate_debug_chunk({cx, cy, cz});
-                    } else {
-                        world.generate_chunk({cx, cy, cz});
-                    }
-                }
-            }
-        }
-
         std::vector<VertexArrayObject> chunk_vaos{};
         std::vector<size_t> chunk_face_counts{};
         std::vector<vec3> chunk_position{};
@@ -297,24 +335,28 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
             for (int cy = -chunk_radius; cy < chunk_radius; cy++) {
                 for (int cx = -chunk_radius; cx < chunk_radius; cx++) {
                     VertexArrayObject vao{};
-
-                    auto faces(world.get_chunk_mesh({cx, cy, cz}));
-                    StaticBuffer faces_b(faces, GL_ARRAY_BUFFER);
-
                     vao.attach_shader(basic_s);
                     vao.attach_buffer_object(
                         "v_position",
                         face_position_geometry_b
                     );
+
+                    StaticBuffer faces_b(
+                        *g_world.get_chunk_mesh({cx, cy, cz}),
+                        GL_ARRAY_BUFFER
+                    );
                     vao.attach_buffer_object("v_offset", std::move(faces_b), 1);
+
                     chunk_vaos.push_back(std::move(vao));
-                    chunk_face_counts.push_back(faces.size());
+                    chunk_face_counts.push_back(
+                        faces_b.byte_count() / sizeof(uint32_t)
+                    );
                     chunk_position.push_back(
                         {static_cast<float>(cx) * g_chunk_size,
                          static_cast<float>(cy) * g_chunk_size,
                          static_cast<float>(cz) * g_chunk_size}
                     );
-                    triangle_count += faces.size();
+                    triangle_count += faces_b.byte_count() / sizeof(uint32_t);
                     vao_count++;
                 }
             }
@@ -364,15 +406,15 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
                 glfwSwapInterval(0);
             }
 
-            camera_direction.x =
+            g_camera_direction.x =
                 std::cos(glm::radians(g_yaw)) * std::cos(glm::radians(g_pitch));
-            camera_direction.y = sin(glm::radians(g_pitch));
-            camera_direction.z =
+            g_camera_direction.y = sin(glm::radians(g_pitch));
+            g_camera_direction.z =
                 std::sin(glm::radians(g_yaw)) * std::cos(glm::radians(g_pitch));
             mat4 view = glm::lookAt(
                 g_camera_position,
-                g_camera_position + glm::normalize(camera_direction),
-                camera_up
+                g_camera_position + glm::normalize(g_camera_direction),
+                g_camera_up
             );
             mat4 proj = glm::perspective(
                 glm::radians(45.0f),

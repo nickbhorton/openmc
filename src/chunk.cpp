@@ -27,6 +27,11 @@ uint32_t Chunk::test_block_mask(std::array<int32_t, 3> at)
     return test_block_mask(at[0], at[1], at[2]);
 }
 
+uint32_t Chunk::test_block_mask(std::array<int64_t, 3> at)
+{
+    return test_block_mask(at[0], at[1], at[2]);
+}
+
 void Chunk::set_block(uint32_t x, uint32_t y, uint32_t z, uint32_t block)
 {
     uint32_t const index = calculate_index(x, y, z);

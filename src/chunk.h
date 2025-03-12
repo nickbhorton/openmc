@@ -17,6 +17,7 @@ public:
     void unset_block(uint32_t x, uint32_t y, uint32_t z);
     uint32_t test_block_mask(int32_t x, int32_t y, int32_t z);
     uint32_t test_block_mask(std::array<int32_t, 3> at);
+    uint32_t test_block_mask(std::array<int64_t, 3> at);
     std::vector<uint32_t> mesh();
 
 private:
