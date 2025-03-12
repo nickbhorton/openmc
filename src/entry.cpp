@@ -332,8 +332,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         );
 
         // loading the texture atlas
-        std::string block_texture_dir =
-            "/home/nick-dev/res/minecraft/textures/block/";
+        std::string block_texture_dir = "../res/images/";
 
         std::vector<std::string> block_texture_filenames{};
         std::ifstream file("../res/texture_atlas.json");
