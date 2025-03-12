@@ -31,6 +31,7 @@ add_executable(openmc src/entry.cpp
     src/block.cpp src/block.h
     src/world.cpp src/world.h
     src/intersect.cpp src/intersect.h
+    src/renderer.cpp src/renderer.h
 )
 target_link_libraries(openmc PRIVATE glad glfw imgui)
 target_compile_options(openmc PRIVATE -g -O -Wextra -Wall)

@@ -2,6 +2,7 @@
 
 #include <glm/ext/vector_float2.hpp>
 #include <glm/gtc/noise.hpp>
+#include <iostream>
 
 #include "block.h"
 #include "chunk.h"
@@ -14,17 +15,22 @@ size_t Array3Hash::operator()(std::array<int32_t, 3> const& array3) const
 
 World::World() : chunks{} {}
 
-std::optional<std::array<std::array<int64_t, 3>, 2>>
-World::get_chunk_and_block_key(std::array<int64_t, 3> at)
+std::array<int32_t, 3> World::get_chunk_key(std::array<int64_t, 3> at)
 {
     static auto calculate_chunk_key = [](int64_t at_n) -> int32_t {
         return at_n < 0 ? (at_n + 1) / g_chunk_size - 1 : at_n / g_chunk_size;
     };
-    std::array<int32_t, 3> const chunk_key{
+    return {
         calculate_chunk_key(at[0]),
         calculate_chunk_key(at[1]),
         calculate_chunk_key(at[2])
     };
+}
+
+std::optional<std::array<std::array<int64_t, 3>, 2>>
+World::get_chunk_and_block_key(std::array<int64_t, 3> at)
+{
+    std::array<int32_t, 3> const chunk_key{get_chunk_key(at)};
 
     // if chunk does not exist say block exists
     if (chunks.find(chunk_key) == chunks.end()) {
@@ -40,11 +46,13 @@ World::get_chunk_and_block_key(std::array<int64_t, 3> at)
         }
         return at_n % g_chunk_size;
     };
+
     std::array<int64_t, 3> const block_key{
         calculate_block_key(at[0]),
         calculate_block_key(at[1]),
         calculate_block_key(at[2])
     };
+
     std::array<int64_t, 3> ll_chunk_key{
         static_cast<int64_t>(chunk_key[0]),
         static_cast<int64_t>(chunk_key[1]),
@@ -70,6 +78,8 @@ uint32_t World::test_block(std::array<int64_t, 3> at)
 
 void World::remove_block(std::array<int64_t, 3> at)
 {
+    std::cout << "remove_block at: " << at[0] << " " << at[1] << " " << at[2]
+              << "\n";
     auto const cb_opt = get_chunk_and_block_key(at);
     if (!cb_opt.has_value()) {
         return;
@@ -77,10 +87,11 @@ void World::remove_block(std::array<int64_t, 3> at)
     auto const [chunk_key, block_key] = get_chunk_and_block_key(at).value();
     std::array<int32_t, 3> l_chunk_key{
         static_cast<int32_t>(chunk_key[0]),
-        static_cast<int32_t>(chunk_key[0]),
-        static_cast<int32_t>(chunk_key[0])
+        static_cast<int32_t>(chunk_key[1]),
+        static_cast<int32_t>(chunk_key[2])
     };
     chunks[l_chunk_key].set_block(block_key[0], block_key[1], block_key[2], 0);
+    generate_mesh(l_chunk_key);
 }
 
 static uint32_t rand_block_index()
@@ -139,6 +150,7 @@ void World::generate_debug_chunk(std::array<int32_t, 3> at)
 
 void World::generate_mesh(std::array<int32_t, 3> at)
 {
+    std::cout << "mesh_gen: " << at[0] << " " << at[1] << " " << at[2] << "\n";
     std::vector<uint32_t> faces;
     for (int64_t xi = 0; xi < g_chunk_size; xi++) {
         for (int64_t zi = 0; zi < g_chunk_size; zi++) {
@@ -201,7 +213,7 @@ void World::generate_mesh(std::array<int32_t, 3> at)
             }
         }
     }
-    meshes.emplace(std::make_pair(at, std::move(faces)));
+    meshes[at] = std::move(faces);
 }
 
 std::vector<uint32_t> const* World::get_chunk_mesh(std::array<int32_t, 3> at)

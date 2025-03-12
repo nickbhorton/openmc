@@ -20,6 +20,7 @@
 #include "chunk.h"
 #include "image.h"
 #include "intersect.h"
+#include "renderer.h"
 #include "texture.h"
 #include "vao.h"
 #include "world.h"
@@ -42,6 +43,7 @@ typedef glm::uvec2 uvec2;
 typedef glm::mat4 mat4;
 
 World g_world{};
+std::unique_ptr<Renderer> g_renderer{};
 
 ivec2 g_window_size(200, 200);
 ivec2 g_last{g_window_size[0] / 2, g_window_size[1] / 2};
@@ -56,6 +58,31 @@ vec3 g_camera_direction = vec3(
 );
 bool mouse_capture{true};
 bool first_mouse_update{true};
+
+std::vector<std::array<float, 3>> const face_position_geometry{
+    {{0, 0, 0}, {1, 0, 0}, {0, 0, 1}, {1, 0, 1}}
+};
+
+std::unique_ptr<StaticBuffer> g_face_position_geometry_b;
+std::unique_ptr<ShaderProgram> basic_s;
+
+void update_renderer(Renderer& r, int cx, int cy, int cz)
+{
+    VertexArrayObject vao{};
+    vao.attach_shader(*basic_s.get());
+    vao.attach_buffer_object("v_position", *g_face_position_geometry_b.get());
+
+    StaticBuffer faces_b(
+        *g_world.get_chunk_mesh({cx, cy, cz}),
+        GL_ARRAY_BUFFER
+    );
+    vao.attach_buffer_object("v_offset", std::move(faces_b), 1);
+
+    r.vaos[cx + g_chunk_radius][cy + g_chunk_radius][cz + g_chunk_radius] =
+        std::move(vao);
+    r.draw_sizes[cx + g_chunk_radius][cy + g_chunk_radius]
+                [cz + g_chunk_radius] = faces_b.byte_count() / sizeof(uint32_t);
+}
 
 static void glfw_error_callback(int error, const char* desc)
 {
@@ -174,7 +201,8 @@ void glfw_mouse_button_callback(
     [[maybe_unused]] int mods
 )
 {
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS &&
+        mouse_capture) {
         auto const points{intersections(
             {g_camera_position.x, g_camera_position.y, g_camera_position.z},
             {g_camera_direction.x, g_camera_direction.y, g_camera_direction.z},
@@ -188,17 +216,27 @@ void glfw_mouse_button_callback(
             };
             uint32_t const block_type = g_world.test_block(checked_block);
             if (block_type > 0) {
-                std::cout << g_world.test_block(checked_block) << "\n";
-                std::cout << "removed block at ";
-                std::cout << checked_block[0] << " ";
-                std::cout << checked_block[1] << " ";
-                std::cout << checked_block[2] << "\n";
+                std::cout << "pre test block: "
+                          << g_world.test_block(checked_block) << "\n";
                 g_world.remove_block(checked_block);
-                std::cout << g_world.test_block(checked_block) << "\n";
+                std::cout << "post test block: "
+                          << g_world.test_block(checked_block) << "\n";
+
+                auto const chunk_to_update =
+                    g_world.get_chunk_key(checked_block);
+
+                std::cout << "chunk to update: " << chunk_to_update[0] << " "
+                          << chunk_to_update[1] << " " << chunk_to_update[2]
+                          << "\n";
+                update_renderer(
+                    *g_renderer.get(),
+                    chunk_to_update[0],
+                    chunk_to_update[1],
+                    chunk_to_update[2]
+                );
                 break;
             }
         }
-        std::exit(0);
     }
 }
 
@@ -232,10 +270,9 @@ void frame_input(GLFWwindow* window)
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
 {
-    int constexpr chunk_radius = 2;
-    for (int cz = -chunk_radius; cz < chunk_radius; cz++) {
-        for (int cy = -chunk_radius; cy < chunk_radius; cy++) {
-            for (int cx = -chunk_radius; cx < chunk_radius; cx++) {
+    for (int cz = -g_chunk_radius; cz < g_chunk_radius; cz++) {
+        for (int cy = -g_chunk_radius; cy < g_chunk_radius; cy++) {
+            for (int cx = -g_chunk_radius; cx < g_chunk_radius; cx++) {
                 if (cx == 0 && cy == 0 && cz == 0) {
                     g_world.generate_debug_chunk({cx, cy, cz});
                 } else {
@@ -243,7 +280,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
                 }
             }
         }
-        std::cout << "chunk z layer " << cz << " generation complete\n";
     }
 
     glfwInit();
@@ -283,10 +319,11 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
     bool open_imgui{true};
 
     {
-        ShaderProgram basic_s(
+        std::vector<std::pair<std::string, GLenum>> basic_s_constructor_param{
             {{"../res/shaders/basic.vert.glsl", GL_VERTEX_SHADER},
              {"../res/shaders/basic.frag.glsl", GL_FRAGMENT_SHADER}}
-        );
+        };
+        basic_s = std::make_unique<ShaderProgram>(basic_s_constructor_param);
 
         ShaderProgram axis_s(
             {{"../res/shaders/axis.vert.glsl", GL_VERTEX_SHADER},
@@ -318,46 +355,17 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
 
         Texture texture_atlas{stiched, 0};
 
-        std::vector<std::array<float, 3>> face_position_geometry{
-            {{0, 0, 0}, {1, 0, 0}, {0, 0, 1}, {1, 0, 1}}
-        };
-        StaticBuffer face_position_geometry_b(
+        g_renderer = std::make_unique<Renderer>();
+
+        g_face_position_geometry_b = std::make_unique<StaticBuffer>(
             face_position_geometry,
             GL_ARRAY_BUFFER
         );
 
-        std::vector<VertexArrayObject> chunk_vaos{};
-        std::vector<size_t> chunk_face_counts{};
-        std::vector<vec3> chunk_position{};
-        size_t vao_count{0};
-        size_t triangle_count{0};
-        for (int cz = -chunk_radius; cz < chunk_radius; cz++) {
-            for (int cy = -chunk_radius; cy < chunk_radius; cy++) {
-                for (int cx = -chunk_radius; cx < chunk_radius; cx++) {
-                    VertexArrayObject vao{};
-                    vao.attach_shader(basic_s);
-                    vao.attach_buffer_object(
-                        "v_position",
-                        face_position_geometry_b
-                    );
-
-                    StaticBuffer faces_b(
-                        *g_world.get_chunk_mesh({cx, cy, cz}),
-                        GL_ARRAY_BUFFER
-                    );
-                    vao.attach_buffer_object("v_offset", std::move(faces_b), 1);
-
-                    chunk_vaos.push_back(std::move(vao));
-                    chunk_face_counts.push_back(
-                        faces_b.byte_count() / sizeof(uint32_t)
-                    );
-                    chunk_position.push_back(
-                        {static_cast<float>(cx) * g_chunk_size,
-                         static_cast<float>(cy) * g_chunk_size,
-                         static_cast<float>(cz) * g_chunk_size}
-                    );
-                    triangle_count += faces_b.byte_count() / sizeof(uint32_t);
-                    vao_count++;
+        for (int cz = -g_chunk_radius; cz < g_chunk_radius; cz++) {
+            for (int cy = -g_chunk_radius; cy < g_chunk_radius; cy++) {
+                for (int cx = -g_chunk_radius; cx < g_chunk_radius; cx++) {
+                    update_renderer(*g_renderer.get(), cx, cy, cz);
                 }
             }
         }
@@ -423,8 +431,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
                 0.1f,
                 1000.0f
             );
-            basic_s.update_uniform("view", view);
-            basic_s.update_uniform("proj", proj);
+            basic_s->update_uniform("view", view);
+            basic_s->update_uniform("proj", proj);
             axis_s.update_uniform("view", view);
             axis_s.update_uniform("proj", proj);
 
@@ -434,15 +442,31 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
             glClearBufferfv(GL_COLOR, 0, glm::value_ptr(bg_color));
 
             // draw
-            for (size_t c = 0; c < vao_count; c++) {
-                chunk_vaos[c].bind();
-                basic_s.update_uniform("chunk_offset", chunk_position[c]);
-                glDrawArraysInstanced(
-                    GL_TRIANGLE_STRIP,
-                    0,
-                    static_cast<GLsizei>(face_position_geometry.size()),
-                    chunk_face_counts[c]
-                );
+            for (int cz = -g_chunk_radius; cz < g_chunk_radius; cz++) {
+                for (int cy = -g_chunk_radius; cy < g_chunk_radius; cy++) {
+                    for (int cx = -g_chunk_radius; cx < g_chunk_radius; cx++) {
+                        g_renderer
+                            ->vaos[cx + g_chunk_radius][cy + g_chunk_radius]
+                                  [cz + g_chunk_radius]
+                            .bind();
+                        basic_s->update_uniform(
+                            "chunk_offset",
+                            vec3(
+                                static_cast<float>(cx) * g_chunk_size,
+                                static_cast<float>(cy) * g_chunk_size,
+                                static_cast<float>(cz) * g_chunk_size
+                            )
+                        );
+                        glDrawArraysInstanced(
+                            GL_TRIANGLE_STRIP,
+                            0,
+                            static_cast<GLsizei>(face_position_geometry.size()),
+                            g_renderer->draw_sizes[cx + g_chunk_radius]
+                                                  [cy + g_chunk_radius]
+                                                  [cz + g_chunk_radius]
+                        );
+                    }
+                }
             }
 
             axis_vao.bind();
@@ -475,8 +499,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
                 );
                 ImGui::Checkbox("Wireframe", &imgui_wireframe);
                 ImGui::Checkbox("Vsync", &imgui_vsync);
-                ImGui::Text("%zu triangles rendered", triangle_count);
-                ImGui::Text("%zu vao drawn", vao_count);
+                ImGui::Text("%d triangles rendered", 0);
+                ImGui::Text("%d vao drawn", 0);
                 ImGui::Text("%.2f FPS", io.Framerate);
                 ImGui::End();
 

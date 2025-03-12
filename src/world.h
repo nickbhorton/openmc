@@ -21,6 +21,7 @@ public:
 
     uint32_t test_block(std::array<int64_t, 3> at);
     void remove_block(std::array<int64_t, 3> at);
+    std::array<int32_t, 3> get_chunk_key(std::array<int64_t, 3> at);
 
 private:
     void generate_mesh(std::array<int32_t, 3> at);
