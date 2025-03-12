@@ -4,7 +4,7 @@
 
 #include "vao.h"
 
-int constexpr g_chunk_radius = 2;
+int constexpr g_chunk_radius = 1;
 
 struct Renderer {
     std::array<

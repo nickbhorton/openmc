@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 
 // glm includes
+#include <glm/ext/matrix_transform.hpp>
 #include <glm/geometric.hpp>
 #include <glm/gtc/noise.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -372,19 +373,9 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
 
         std::vector<std::array<float, 3>> axis_positions{{
             {0, 0, 0},
-            {1, 0, 0},
-            {0, 0, 0},
-            {0, 1, 0},
-            {0, 0, 0},
-            {0, 0, 1},
         }};
         std::vector<std::array<float, 3>> axis_colors{{
             {1, 0, 0},
-            {1, 0, 0},
-            {0, 1, 0},
-            {0, 1, 0},
-            {0, 0, 1},
-            {0, 0, 1},
         }};
         StaticBuffer axis_positions_b(axis_positions, GL_ARRAY_BUFFER);
         StaticBuffer axis_colors_b(axis_colors, GL_ARRAY_BUFFER);
@@ -397,6 +388,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         // imgui vars
         bool imgui_wireframe{false};
         bool imgui_vsync{true};
+        glPointSize(10);
 
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
@@ -433,8 +425,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
             );
             basic_s->update_uniform("view", view);
             basic_s->update_uniform("proj", proj);
-            axis_s.update_uniform("view", view);
-            axis_s.update_uniform("proj", proj);
+            axis_s.update_uniform("view", glm::identity<mat4>());
+            axis_s.update_uniform("proj", glm::identity<mat4>());
 
             // clear screen white
             vec4 constexpr bg_color{1, 1, 1, 1};
@@ -471,7 +463,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
 
             axis_vao.bind();
             glDrawArrays(
-                GL_LINES,
+                GL_POINTS,
                 0,
                 static_cast<GLsizei>(axis_positions.size())
             );

@@ -54,16 +54,14 @@ struct CompairIntersections {
 std::vector<std::array<float, 3>>
 intersections(std::array<float, 3> pos, std::array<float, 3> dir, int radius)
 {
-    /*
-    std::cout << "(";
+    std::cout << "position: (";
     std::cout << pos[0] << ", ";
     std::cout << pos[1] << ", ";
     std::cout << pos[2] << ")\n";
-    std::cout << "+ t * (";
+    std::cout << "direction: (";
     std::cout << dir[0] << ", ";
     std::cout << dir[1] << ", ";
     std::cout << dir[2] << ")\n";
-    */
 
     std::vector<std::array<float, 3>> result_vector{};
     auto ord1{interections_helper(
@@ -98,12 +96,10 @@ intersections(std::array<float, 3> pos, std::array<float, 3> dir, int radius)
     CompairIntersections comp_op{.pos = pos};
     std::sort(result_vector.begin(), result_vector.end(), comp_op);
 
-    /*
     for (auto const& v : result_vector) {
         std::cout << "(" << v[0] << ", " << v[1] << ", " << v[2] << ")\n";
         // std::cout << distance(v, pos) << "\n";
     };
-    */
 
     return result_vector;
 }
