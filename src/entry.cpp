@@ -24,6 +24,7 @@
 #include "renderer.h"
 #include "texture.h"
 #include "vao.h"
+#include "window.h"
 #include "world.h"
 
 #include <array>
@@ -46,20 +47,13 @@ typedef glm::mat4 mat4;
 World g_world{};
 std::unique_ptr<Renderer> g_renderer{};
 
-ivec2 g_window_size(200, 200);
-ivec2 g_last{g_window_size[0] / 2, g_window_size[1] / 2};
-float g_yaw{45.0};
-float g_pitch{11.5};
 vec3 g_camera_position = vec3(-3.5, -1.5, -3.5);
 vec3 g_camera_up = vec3(0.0, 1.0, 0.0);
 vec3 g_camera_direction = vec3(
-    cos(glm::radians(g_yaw)) * cos(glm::radians(g_pitch)),
-    sin(glm::radians(g_pitch)),
-    sin(glm::radians(g_yaw)) * cos(glm::radians(g_pitch))
+    cos(glm::radians(Window::yaw)) * cos(glm::radians(Window::pitch)),
+    sin(glm::radians(Window::pitch)),
+    sin(glm::radians(Window::yaw)) * cos(glm::radians(Window::pitch))
 );
-bool mouse_capture{true};
-bool first_mouse_update{true};
-
 std::vector<std::array<float, 3>> const face_position_geometry{
     {{0, 0, 0}, {1, 0, 0}, {0, 0, 1}, {1, 0, 1}}
 };
@@ -85,116 +79,6 @@ void update_renderer(Renderer& r, int cx, int cy, int cz)
                 [cz + g_chunk_radius] = faces_b.byte_count() / sizeof(uint32_t);
 }
 
-static void glfw_error_callback(int error, const char* desc)
-{
-    std::cerr << "glfw_error_callback " << error << " " << desc << std::endl;
-    std::exit(1);
-}
-
-static void glfw_key_callback(
-    GLFWwindow* window,
-    int key,
-    [[maybe_unused]] int scancode,
-    int action,
-    [[maybe_unused]] int mods
-)
-{
-    if (key == GLFW_KEY_Q && action == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
-    }
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-        if (!mouse_capture) {
-            mouse_capture = true;
-            first_mouse_update = true;
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        } else {
-            mouse_capture = false;
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        }
-    }
-    if (key == GLFW_KEY_E && action == GLFW_PRESS) {
-        if (!mouse_capture) {
-            mouse_capture = true;
-            first_mouse_update = true;
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        } else {
-            mouse_capture = false;
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        }
-    }
-}
-
-void glfw_window_resize_callback(
-    [[maybe_unused]] GLFWwindow* window,
-    int width,
-    int height
-)
-{
-    // std::cout << "window resized to " << width << "x" << height << std::endl;
-    g_window_size.x = width;
-    g_window_size.y = height;
-    glViewport(0, 0, width, height);
-}
-
-GLFWwindow* create_glfw_window(ivec2 window_size)
-{
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-    GLFWwindow* window = glfwCreateWindow(
-        window_size[0],
-        window_size[1],
-        "ngi window",
-        NULL,
-        NULL
-    );
-    if (!window) {
-        glfw_error_callback(-1, "window was null");
-    }
-
-    glfwMakeContextCurrent(window);
-
-    int glad_version = gladLoadGL(glfwGetProcAddress);
-    if (glad_version == 0) {
-        glfw_error_callback(-1, "glad verison what 0");
-    }
-
-    return window;
-}
-
-void glfw_mouse_callback(
-    [[maybe_unused]] GLFWwindow* window,
-    double xpos,
-    double ypos
-)
-{
-    if (first_mouse_update) {
-        g_last[0] = static_cast<int>(xpos);
-        g_last[1] = static_cast<int>(ypos);
-        first_mouse_update = false;
-    }
-
-    if (mouse_capture) {
-        double xoffset = xpos - static_cast<double>(g_last[0]);
-        // reversed since y-coordinates range from bottom to top
-        double yoffset = static_cast<double>(g_last[1]) - ypos;
-        g_last[0] = static_cast<int>(xpos);
-        g_last[1] = static_cast<int>(ypos);
-
-        const double sensitivity = 0.1;
-        xoffset *= sensitivity;
-        yoffset *= sensitivity;
-        g_yaw += static_cast<float>(xoffset);
-        g_pitch += static_cast<float>(yoffset);
-        if (g_pitch > 89.0f) {
-            g_pitch = 89.0f;
-        }
-        if (g_pitch < -89.0f) {
-            g_pitch = -89.0f;
-        }
-    }
-}
 void glfw_mouse_button_callback(
     [[maybe_unused]] GLFWwindow* window,
     int button,
@@ -203,7 +87,7 @@ void glfw_mouse_button_callback(
 )
 {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS &&
-        mouse_capture) {
+        Window::mouse_capture) {
         auto const points{intersections(
             {g_camera_position.x, g_camera_position.y, g_camera_position.z},
             {g_camera_direction.x, g_camera_direction.y, g_camera_direction.z},
@@ -283,25 +167,11 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         }
     }
 
-    glfwInit();
-    glfwSetErrorCallback(glfw_error_callback);
-
-    GLFWwindow* window = create_glfw_window(g_window_size);
-    glfwSetKeyCallback(window, glfw_key_callback);
-    glfwSetFramebufferSizeCallback(window, glfw_window_resize_callback);
-    glfwSetCursorPosCallback(window, glfw_mouse_callback);
-    glfwSetCursorPosCallback(window, glfw_mouse_callback);
-    glfwSetMouseButtonCallback(window, glfw_mouse_button_callback);
-
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
-    glFrontFace(GL_CCW);
-    glCullFace(GL_BACK);
-
-    glViewport(0, 0, g_window_size[0], g_window_size[1]);
-
-    mouse_capture = true;
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    Window window{};
+    glfwSetMouseButtonCallback(
+        window.get_glfw_window(),
+        glfw_mouse_button_callback
+    );
 
     // setup ImGui context
     IMGUI_CHECKVERSION();
@@ -310,7 +180,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.IniFilename = NULL;
 
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplGlfw_InitForOpenGL(window.get_glfw_window(), true);
     ImGui_ImplOpenGL3_Init();
 
     ImGuiWindowFlags window_flags_imgui{};
@@ -332,7 +202,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         );
 
         // loading the texture atlas
-        std::string block_texture_dir = "/home/nick-dev/res/minecraft/textures/block/";
+        std::string block_texture_dir =
+            "/home/nick-dev/res/minecraft/textures/block/";
 
         std::vector<std::string> block_texture_filenames{};
         std::ifstream file("../res/texture_atlas.json");
@@ -389,10 +260,10 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         bool imgui_vsync{true};
         glPointSize(10);
 
-        while (!glfwWindowShouldClose(window)) {
+        while (!glfwWindowShouldClose(window.get_glfw_window())) {
             glfwPollEvents();
-            if (mouse_capture) {
-                frame_input(window);
+            if (Window::mouse_capture) {
+                frame_input(window.get_glfw_window());
             }
             if (imgui_wireframe) {
                 glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -405,11 +276,11 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
                 glfwSwapInterval(0);
             }
 
-            g_camera_direction.x =
-                std::cos(glm::radians(g_yaw)) * std::cos(glm::radians(g_pitch));
-            g_camera_direction.y = sin(glm::radians(g_pitch));
-            g_camera_direction.z =
-                std::sin(glm::radians(g_yaw)) * std::cos(glm::radians(g_pitch));
+            g_camera_direction.x = std::cos(glm::radians(Window::yaw)) *
+                                   std::cos(glm::radians(Window::pitch));
+            g_camera_direction.y = sin(glm::radians(Window::pitch));
+            g_camera_direction.z = std::sin(glm::radians(Window::yaw)) *
+                                   std::cos(glm::radians(Window::pitch));
             mat4 view = glm::lookAt(
                 g_camera_position,
                 g_camera_position + glm::normalize(g_camera_direction),
@@ -417,8 +288,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
             );
             mat4 proj = glm::perspective(
                 glm::radians(45.0f),
-                static_cast<float>(g_window_size[0]) /
-                    static_cast<float>(g_window_size[1]),
+                static_cast<float>(Window::width) /
+                    static_cast<float>(Window::height),
                 0.1f,
                 1000.0f
             );
@@ -468,7 +339,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
             );
 
             // draw the imgui window
-            if (!mouse_capture) {
+            if (!Window::mouse_capture) {
                 float constexpr imgui_window_padding{10};
                 ImGui_ImplOpenGL3_NewFrame();
                 ImGui_ImplGlfw_NewFrame();
@@ -479,11 +350,11 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
                     ImVec2(imgui_window_padding, imgui_window_padding)
                 );
                 ImGui::SetWindowSize(ImVec2(
-                    g_window_size.x - 2 * imgui_window_padding,
-                    g_window_size.y - 2 * imgui_window_padding
+                    Window::width - 2 * imgui_window_padding,
+                    Window::height - 2 * imgui_window_padding
                 ));
-                ImGui::DragFloat("Yaw", &g_yaw, g_yaw);
-                ImGui::DragFloat("Pitch", &g_pitch, g_pitch);
+                ImGui::DragFloat("Yaw", &Window::yaw, Window::yaw);
+                ImGui::DragFloat("Pitch", &Window::pitch, Window::pitch);
                 ImGui::InputFloat3(
                     "Camera Position",
                     glm::value_ptr(g_camera_position)
@@ -499,9 +370,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
                 ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
             }
 
-            glfwSwapBuffers(window);
+            glfwSwapBuffers(window.get_glfw_window());
         }
     }
-    glfwDestroyWindow(window);
-    glfwTerminate();
 }
