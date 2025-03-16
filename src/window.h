@@ -3,8 +3,10 @@
 #include <glad/gl.h>
 
 #include <GLFW/glfw3.h>
+#include <glm/ext/matrix_float4x4.hpp>
 #include <glm/ext/vector_float3.hpp>
-#include <glm/trigonometric.hpp>
+
+void camera_update_per_frame(GLFWwindow* window);
 
 class Window
 {
@@ -30,12 +32,6 @@ public:
     );
     static void
     glfw_mouse_callback(GLFWwindow* window, double xpos, double ypos);
-    static void glfw_mouse_button_callback(
-        GLFWwindow* window,
-        int button,
-        int action,
-        int mods
-    );
 
     // screen static variables
     static int width;
@@ -55,4 +51,6 @@ public:
     static glm::vec3 camera_position;
     static glm::vec3 camera_up;
     static glm::vec3 camera_direction;
+    static glm::mat4 view;
+    static glm::mat4 proj;
 };

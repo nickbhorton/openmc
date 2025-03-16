@@ -36,3 +36,12 @@ add_executable(openmc src/entry.cpp
 )
 target_link_libraries(openmc PRIVATE glad glfw imgui)
 target_compile_options(openmc PRIVATE -g -O -Wextra -Wall)
+
+add_executable(a10 src/a10.cpp 
+    src/buffer.cpp src/buffer.h
+    src/shader.h src/shader_object.cpp src/shader_program.cpp 
+    src/vao.cpp src/vao.h
+    src/window.cpp src/window.h
+)
+target_link_libraries(a10 PRIVATE glad glfw imgui)
+target_compile_options(a10 PRIVATE -g -O -Wextra -Wall)

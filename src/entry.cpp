@@ -58,7 +58,7 @@ void update_renderer(Renderer& r, int cx, int cy, int cz)
                 [cz + g_chunk_radius] = faces_b.byte_count() / sizeof(uint32_t);
 }
 
-void frame_input(GLFWwindow* window)
+void camera_update_per_frame(GLFWwindow* window)
 {
     const float camera_speed = 0.25f;
 
@@ -198,7 +198,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         while (!glfwWindowShouldClose(window.get_glfw_window())) {
             glfwPollEvents();
             if (Window::mouse_capture) {
-                frame_input(window.get_glfw_window());
+                camera_update_per_frame(window.get_glfw_window());
             }
             if (imgui_wireframe) {
                 glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);

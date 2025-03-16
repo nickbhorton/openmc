@@ -1,37 +1,43 @@
 #include "window.h"
 
 #include <GLFW/glfw3.h>
+
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/matrix_transform.hpp>
 #include <iostream>
-#include <memory>
-
-#include "intersect.h"
-#include "renderer.h"
-#include "world.h"
-
-void update_renderer(Renderer& r, int cx, int cy, int cz);
-// globals from entry point
-extern World g_world;
-extern std::unique_ptr<Renderer> g_renderer;
 
 // set the default static values
 // screen static variables
 int Window::width = 100;
 int Window::height = 100;
 GLFWwindow* Window::glfw_window = Window::create_glfw_window();
+
 // mouse static variables
 int Window::mouse_last_x = Window::width / 2;
 int Window::mouse_last_y = Window::height / 2;
 bool Window::mouse_capture = true;
 bool Window::first_mouse_update = true;
+
 // camera static varaibles
-float Window::yaw = 45.0;
-float Window::pitch = 11.5;
-glm::vec3 Window::camera_position = glm::vec3(-3.5, -1.5, -3.5);
+float Window::yaw = 90;
+float Window::pitch = 0;
+glm::vec3 Window::camera_position = glm::vec3(0.0, 0.0, -1.5);
 glm::vec3 Window::camera_up = glm::vec3(0.0, 1.0, 0.0);
 glm::vec3 Window::camera_direction = glm::vec3(
     std::cos(glm::radians(Window::yaw)) * std::cos(glm::radians(Window::pitch)),
     std::sin(glm::radians(Window::pitch)),
     std::sin(glm::radians(Window::yaw)) * std::cos(glm::radians(Window::pitch))
+);
+glm::mat4 Window::view = glm::lookAt(
+    Window::camera_position,
+    Window::camera_position + glm::normalize(Window::camera_direction),
+    Window::camera_up
+);
+glm::mat4 Window::proj = glm::perspective(
+    glm::radians(45.0f),
+    static_cast<float>(Window::width) / static_cast<float>(Window::height),
+    0.1f,
+    1000.0f
 );
 
 Window::Window()
@@ -44,7 +50,6 @@ Window::Window()
         Window::glfw_window_resize_callback
     );
     glfwSetCursorPosCallback(Window::glfw_window, Window::glfw_mouse_callback);
-    glfwSetMouseButtonCallback(Window::glfw_window, glfw_mouse_button_callback);
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -102,16 +107,6 @@ void Window::glfw_key_callback(
     if (key == GLFW_KEY_Q && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-        if (!mouse_capture) {
-            mouse_capture = true;
-            first_mouse_update = true;
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        } else {
-            mouse_capture = false;
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        }
-    }
     if (key == GLFW_KEY_E && action == GLFW_PRESS) {
         if (!mouse_capture) {
             mouse_capture = true;
@@ -168,50 +163,54 @@ void Window::glfw_mouse_callback(
     }
 }
 
-void Window::glfw_mouse_button_callback(
-    [[maybe_unused]] GLFWwindow* window,
-    int button,
-    int action,
-    [[maybe_unused]] int mods
-)
+void camera_update_per_frame(GLFWwindow* window)
 {
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS &&
-        Window::mouse_capture) {
-        auto const points{intersections(
-            {camera_position.x, camera_position.y, camera_position.z},
-            {camera_direction.x, camera_direction.y, camera_direction.z},
-            10
-        )};
-        for (auto const& p : points) {
-            std::array<int64_t, 3> const checked_block{
-                static_cast<int64_t>(std::floor(p[0])),
-                static_cast<int64_t>(std::floor(p[1])),
-                static_cast<int64_t>(std::floor(p[2]))
-            };
-            uint32_t const block_type = g_world.test_block(checked_block);
-            if (block_type > 0) {
-                std::cout << "pre test block: "
-                          << g_world.test_block(checked_block) << "\n";
-                g_world.remove_block(checked_block);
-                std::cout << "post test block: "
-                          << g_world.test_block(checked_block) << "\n";
+    const float camera_speed = 0.25f;
 
-                auto const chunk_to_update =
-                    g_world.get_chunk_key(checked_block);
-
-                std::cout << "chunk to update: " << chunk_to_update[0] << " "
-                          << chunk_to_update[1] << " " << chunk_to_update[2]
-                          << "\n";
-                update_renderer(
-                    *g_renderer.get(),
-                    chunk_to_update[0],
-                    chunk_to_update[1],
-                    chunk_to_update[2]
-                );
-                break;
-            }
-        }
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        Window::camera_position +=
+            camera_speed * glm::normalize(Window::camera_direction);
     }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        Window::camera_position -=
+            camera_speed * glm::normalize(Window::camera_direction);
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        Window::camera_position -=
+            glm::normalize(
+                glm::cross(Window::camera_direction, Window::camera_up)
+            ) *
+            camera_speed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        Window::camera_position +=
+            glm::normalize(
+                glm::cross(Window::camera_direction, Window::camera_up)
+            ) *
+            camera_speed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+        Window::camera_position += Window::camera_up * camera_speed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+        Window::camera_position -= Window::camera_up * camera_speed;
+    }
+    Window::camera_direction.x = std::cos(glm::radians(Window::yaw)) *
+                                 std::cos(glm::radians(Window::pitch));
+    Window::camera_direction.y = sin(glm::radians(Window::pitch));
+    Window::camera_direction.z = std::sin(glm::radians(Window::yaw)) *
+                                 std::cos(glm::radians(Window::pitch));
+    Window::view = glm::lookAt(
+        Window::camera_position,
+        Window::camera_position + glm::normalize(Window::camera_direction),
+        Window::camera_up
+    );
+    Window::proj = glm::perspective(
+        glm::radians(45.0f),
+        static_cast<float>(Window::width) / static_cast<float>(Window::height),
+        0.1f,
+        1000.0f
+    );
 }
 
 GLFWwindow* Window::get_glfw_window() { return glfw_window; }
