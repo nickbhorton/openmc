@@ -19,8 +19,8 @@ int main()
 {
     Window window{};
     ShaderProgram basic_s{
-        {{"../res/shaders/axis.vert.glsl", GL_VERTEX_SHADER},
-         {"../res/shaders/axis.frag.glsl", GL_FRAGMENT_SHADER}}
+        {{"../res/shaders/basic.vert.glsl", GL_VERTEX_SHADER},
+         {"../res/shaders/basic.frag.glsl", GL_FRAGMENT_SHADER}}
     };
 
     std::vector<std::array<float, 3>> positions{};

@@ -2,12 +2,8 @@
 
 layout (location = 0) out vec4 fColor;
 
-in vec2 f_uv;
-in float dim;
-
-uniform sampler2D tex;
+in vec3 f_color;
 
 void main() {
-    vec4 texture_out = texture(tex, f_uv);
-    fColor = dim * vec4(texture_out.rgb, 1.0);
+    fColor = vec4(f_color, 1.0);
 }
