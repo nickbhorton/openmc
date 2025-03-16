@@ -2,16 +2,37 @@
 
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <memory>
 
+#include "intersect.h"
+#include "renderer.h"
+#include "world.h"
+
+void update_renderer(Renderer& r, int cx, int cy, int cz);
+// globals from entry point
+extern World g_world;
+extern std::unique_ptr<Renderer> g_renderer;
+
+// set the default static values
+// screen static variables
 int Window::width = 100;
 int Window::height = 100;
+GLFWwindow* Window::glfw_window = Window::create_glfw_window();
+// mouse static variables
 int Window::mouse_last_x = Window::width / 2;
 int Window::mouse_last_y = Window::height / 2;
-float Window::yaw = 45.0;
-float Window::pitch = 11.5;
 bool Window::mouse_capture = true;
 bool Window::first_mouse_update = true;
-GLFWwindow* Window::glfw_window = Window::create_glfw_window();
+// camera static varaibles
+float Window::yaw = 45.0;
+float Window::pitch = 11.5;
+glm::vec3 Window::camera_position = glm::vec3(-3.5, -1.5, -3.5);
+glm::vec3 Window::camera_up = glm::vec3(0.0, 1.0, 0.0);
+glm::vec3 Window::camera_direction = glm::vec3(
+    std::cos(glm::radians(Window::yaw)) * std::cos(glm::radians(Window::pitch)),
+    std::sin(glm::radians(Window::pitch)),
+    std::sin(glm::radians(Window::yaw)) * std::cos(glm::radians(Window::pitch))
+);
 
 Window::Window()
 {
@@ -23,6 +44,7 @@ Window::Window()
         Window::glfw_window_resize_callback
     );
     glfwSetCursorPosCallback(Window::glfw_window, Window::glfw_mouse_callback);
+    glfwSetMouseButtonCallback(Window::glfw_window, glfw_mouse_button_callback);
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -33,8 +55,6 @@ Window::Window()
 
     glfwSetInputMode(Window::glfw_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
-
-GLFWwindow* Window::get_glfw_window() { return glfw_window; }
 
 Window::~Window()
 {
@@ -147,3 +167,51 @@ void Window::glfw_mouse_callback(
         }
     }
 }
+
+void Window::glfw_mouse_button_callback(
+    [[maybe_unused]] GLFWwindow* window,
+    int button,
+    int action,
+    [[maybe_unused]] int mods
+)
+{
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS &&
+        Window::mouse_capture) {
+        auto const points{intersections(
+            {camera_position.x, camera_position.y, camera_position.z},
+            {camera_direction.x, camera_direction.y, camera_direction.z},
+            10
+        )};
+        for (auto const& p : points) {
+            std::array<int64_t, 3> const checked_block{
+                static_cast<int64_t>(std::floor(p[0])),
+                static_cast<int64_t>(std::floor(p[1])),
+                static_cast<int64_t>(std::floor(p[2]))
+            };
+            uint32_t const block_type = g_world.test_block(checked_block);
+            if (block_type > 0) {
+                std::cout << "pre test block: "
+                          << g_world.test_block(checked_block) << "\n";
+                g_world.remove_block(checked_block);
+                std::cout << "post test block: "
+                          << g_world.test_block(checked_block) << "\n";
+
+                auto const chunk_to_update =
+                    g_world.get_chunk_key(checked_block);
+
+                std::cout << "chunk to update: " << chunk_to_update[0] << " "
+                          << chunk_to_update[1] << " " << chunk_to_update[2]
+                          << "\n";
+                update_renderer(
+                    *g_renderer.get(),
+                    chunk_to_update[0],
+                    chunk_to_update[1],
+                    chunk_to_update[2]
+                );
+                break;
+            }
+        }
+    }
+}
+
+GLFWwindow* Window::get_glfw_window() { return glfw_window; }
