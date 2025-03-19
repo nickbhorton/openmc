@@ -88,6 +88,11 @@ void ShaderProgram::update_uniform(
     std::string const& uniform_name,
     glm::vec4 new_val
 );
+template <>
+void ShaderProgram::update_uniform(
+    std::string const& uniform_name,
+    GLuint new_val
+);
 template <typename T>
 void ShaderProgram::update_uniform(std::string const& uniform_name, T new_value)
 {

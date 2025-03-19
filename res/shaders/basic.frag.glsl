@@ -2,8 +2,13 @@
 
 layout (location = 0) out vec4 fColor;
 
-in vec3 f_color;
+in float h;
 
 void main() {
-    fColor = vec4(f_color, 1.0);
+    if (h > 0) {
+        fColor = vec4(h, 0.0, 0.0, 1.0);
+    }
+    else {
+        fColor = vec4(0.0, -h, 0.0, 1.0);
+    }
 }

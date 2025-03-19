@@ -54,6 +54,18 @@ StaticBuffer::StaticBuffer(
 
 template <>
 StaticBuffer::StaticBuffer(
+    std::vector<std::array<float, 2>> buffer_data,
+    GLenum bind_target
+)
+    : name{}, bind_target(bind_target), data_type(GL_FLOAT), attrib_size(2),
+      data_size(sizeof(std::array<float, 2>) * buffer_data.size()), moved(false)
+{
+    glCreateBuffers(1, &name);
+    glNamedBufferStorage(name, this->data_size, buffer_data.data(), 0);
+}
+
+template <>
+StaticBuffer::StaticBuffer(
     std::vector<uint32_t> buffer_data,
     GLenum bind_target
 )

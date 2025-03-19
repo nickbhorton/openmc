@@ -5,8 +5,6 @@
 
 #include <glad/gl.h>
 
-#include <array>
-
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_float4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -23,22 +21,36 @@ int main()
          {"../res/shaders/basic.frag.glsl", GL_FRAGMENT_SHADER}}
     };
 
-    std::vector<std::array<float, 3>> positions{};
-    positions.push_back({-0.5, -0.5, 0});
-    positions.push_back({+0.0, +0.5, 0});
-    positions.push_back({+0.5, -0.5, 0});
-    StaticBuffer positions_b{positions, GL_ARRAY_BUFFER};
+    ShaderProgram compute_s{
+        {{"../res/shaders/basic.comp.glsl", GL_COMPUTE_SHADER}}
+    };
 
-    std::vector<std::array<float, 3>> colors{};
-    colors.push_back({1, 0, 0});
-    colors.push_back({0, 1, 0});
-    colors.push_back({0, 0, 1});
-    StaticBuffer colors_b{colors, GL_ARRAY_BUFFER};
+    size_t constexpr x_discritization{1000};
+    size_t constexpr z_discritization{1000};
+    compute_s.update_uniform("xd", static_cast<GLuint>(x_discritization));
+    compute_s.update_uniform("zd", static_cast<GLuint>(z_discritization));
+    std::vector<glm::vec4> partical_positions{
+        x_discritization * z_discritization,
+        glm::vec4(0, 0, 0, 1)
+    };
 
-    VertexArrayObject vao;
-    vao.attach_shader(basic_s);
-    vao.attach_buffer_object("v_position", positions_b);
-    vao.attach_buffer_object("v_color", colors_b);
+    GLuint partical_positions_ssbo{};
+    glCreateBuffers(1, &partical_positions_ssbo);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, partical_positions_ssbo);
+    glBufferData(
+        GL_SHADER_STORAGE_BUFFER,
+        static_cast<int>(partical_positions.size()) *
+            sizeof(partical_positions[0]),
+        partical_positions.data(),
+        GL_DYNAMIC_DRAW
+    );
+
+    VertexArrayObject vao{};
+    vao.bind();
+    glBindBuffer(GL_ARRAY_BUFFER, partical_positions_ssbo);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(0);
+    glBindVertexArray(0);
 
     while (!glfwWindowShouldClose(window.get_glfw_window())) {
         glfwPollEvents();
@@ -52,11 +64,18 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glClearBufferfv(GL_COLOR, 0, glm::value_ptr(background_color));
 
-        // draw
+        // update partical positions with compute shader
+        compute_s.bind();
+        glDispatchCompute(x_discritization, z_discritization, 1);
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        // render the triangles
+        basic_s.bind();
         vao.bind();
-        glDrawArrays(GL_TRIANGLES, 0, positions.size());
+        glDrawArrays(GL_POINTS, 0, partical_positions.size());
 
         // swap buffers
         glfwSwapBuffers(window.get_glfw_window());
+
+        compute_s.update_uniform("t", static_cast<float>(glfwGetTime()));
     }
 }

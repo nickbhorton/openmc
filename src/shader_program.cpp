@@ -148,3 +148,13 @@ void ShaderProgram::update_uniform(
     GLint location = glGetUniformLocation(name, uniform_name.c_str());
     glUniform4fv(location, 1, glm::value_ptr(new_val));
 }
+template <>
+void ShaderProgram::update_uniform(
+    std::string const& uniform_name,
+    GLuint new_val
+)
+{
+    this->bind();
+    GLint location = glGetUniformLocation(name, uniform_name.c_str());
+    glUniform1ui(location, new_val);
+}
