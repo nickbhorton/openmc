@@ -26,5 +26,5 @@ add_executable(a10 src/a10.cpp
     src/vao.cpp src/vao.h
     src/window.cpp src/window.h
 )
-target_link_libraries(a10 PRIVATE glad glfw imgui)
+target_link_libraries(a10 PRIVATE glad glfw)
 target_compile_options(a10 PRIVATE -g -O -Wextra -Wall)
